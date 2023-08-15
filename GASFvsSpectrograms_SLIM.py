@@ -13,6 +13,7 @@ from gwpy.signal import filter_design
 
 from sklearn.metrics import confusion_matrix
 from sklearn import metrics
+from tqdm import tnrange, tqdm_notebook
 from timeit import default_timer as timer
 
 # Initializes numpy and pytorch random seeds for reproducibility 
@@ -20,11 +21,6 @@ seed = 55
 np.random.seed(seed)
 torch.manual_seed(seed)
 torch.cuda.manual_seed(seed)
-
-
-
-
-
 
 
 ### -------------Load dataset------------- ###
@@ -110,7 +106,7 @@ def process_data(raw_data):
 
     return hfilt, hdata
 
-
+print("Processing Data")
 # Process training data
 x_train_dec1_data_arr = []
 x_train_dec1_filt_arr = []
@@ -129,6 +125,15 @@ for raw_data in x_train_dec1_raw:
 
 x_train_dec1_data_arr = np.array(x_train_dec1_data_arr)
 x_train_dec1_filt_arr = np.array(x_train_dec1_filt_arr)
+
+
+
+
+
+
+
+
+
 
 
 for raw_data in x_train_dec2_raw:
@@ -247,18 +252,18 @@ class CNNModel(torch.nn.Module):
     def forward(self, x):
 
         # input image -> conv -> batchnorm -> relu -> maxpool
-        out = self.layer1(x)
+        out1 = self.layer1(x)
         # 1st maxpool output -> conv -> batchnorm -> relu -> maxpool
-        out = self.layer2(out)
+        out2 = self.layer2(out1)
         # flatten the second maxpool output to be used as input into FCN layer
-        out = out.view(out.size(0), -1)
+        out = out2.view(out2.size(0), -1)
 
         # Pass flattened output into FCN layers
         out = self.fc1(out)
         out = self.fc2(out)
         out = self.fc3(out)
         
-        return out
+        return out  # ,out1, out2
     
 
     ### -------------Hyperparameters------------- ###
@@ -332,15 +337,49 @@ batch_split_num = len(train_batches_features)
 
 
 ### -------------Training Loop------------- ###
+print("Training Model")
+# for epoch in range(epochs):
+#     start_time = timer() # start timer
+#     # Each mini-batch number i, grab i-th training feature and target mini-batch and perform fwd/bwd pass on the network
+    
+#     for i in range(batch_split_num):
+    
+#         optimizer.zero_grad()    
+#         train_batch_outputs = model(train_batches_features[i])  
+#         # train_batch_outputs, conv1, conv2 = model(train_batches_features[i]) 
+#         loss = loss_func(train_batch_outputs, train_batches_targets[i])
+#         train_loss_list_gasf.append(loss.item())       
+#         loss.backward()
+#         optimizer.step()
 
-for epoch in range(epochs):
+#     end_time = timer() # End timer
+
+#     with torch.no_grad():
+
+#         ### -------------Compute Validation Accuracy------------- ###
+#         validation_outputs = model(validation_inputs)
+#         val_correct = (torch.argmax(validation_outputs, dim=1) == validation_targets).type(torch.FloatTensor) 
+#         validation_accuracy_list_gasf[epoch] = val_correct.mean()
+
+#         print("Epoch: "+ str(epoch+1),
+#               "Epoch time: " + str(np.round(end_time - start_time, 2)) + "s",
+#               "Validation Accuracy: " + str(np.round(val_correct.mean().numpy() * 100, 2)) + '%',
+#               "Training loss: " + str(np.round(loss.item(), 2)), flush=True)
+
+## NOTE: build a timer percentage bar so that we can see the progress
+
+
+
+### TESTING TIMER
+
+for epoch in tnrange(epochs, desc='Epoch loop'):
     start_time = timer() # start timer
     # Each mini-batch number i, grab i-th training feature and target mini-batch and perform fwd/bwd pass on the network
     
-    for i in range(batch_split_num):
-    
+    for i in tnrange(batch_split_num, desc='Mini-batch loop'):
         optimizer.zero_grad()    
         train_batch_outputs = model(train_batches_features[i])  
+        # train_batch_outputs, conv1, conv2 = model(train_batches_features[i]) 
         loss = loss_func(train_batch_outputs, train_batches_targets[i])
         train_loss_list_gasf.append(loss.item())       
         loss.backward()
@@ -359,8 +398,6 @@ for epoch in range(epochs):
               "Epoch time: " + str(np.round(end_time - start_time, 2)) + "s",
               "Validation Accuracy: " + str(np.round(val_correct.mean().numpy() * 100, 2)) + '%',
               "Training loss: " + str(np.round(loss.item(), 2)), flush=True)
-
-## NOTE: build a timer percentage bar so that we can see the progress
 
 
 ### -------------Plot the training loss and validation accuracy------------- ###
