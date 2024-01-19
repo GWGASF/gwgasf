@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "GASF"
+version = "0.1.0"
+description = "Gravitational Wave Signal Classification"
+authors = ["Daniel Fredin <dfredin@uw.edu>, Cole Welch <colewelch151@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9, <3.11"
+numpy = "^1.26.3"
+pandas = "^2.1.4"
+h5py = "^3.10.0"
+matplotlib = "^3.8.2"
+seaborn = "^0.13.1"
+torch = "^2.1.2"
+scipy = "^1.11.4"
+gwpy = "^3.0.8"
+tqdm = "^4.66.1"
+torchsummary = "^1.5.1"
+scikit-learn = "^1.4.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
