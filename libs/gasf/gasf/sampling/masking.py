@@ -167,13 +167,13 @@ def glitch_sampler(
     half_kernel_width_idx = int(kernel_width * sample_rate / 2)
     
     sampled_strain = torch.zeros([sample_counts, len(ifos), sample_rate*kernel_width])
-    
+
     mask_dict = masking(
         gltich_info,
         segment_duration=segment_duration,
         segment_start_time=segment_start_time,
         shift_range=shift_range,
-        pad_width=kernel_width/2,
+        pad_width=kernel_width,
         sample_rate=sample_rate, 
         merge_edges = False
     )
@@ -195,7 +195,7 @@ def glitch_sampler(
             
             start_idx = sample_center[j] - half_kernel_width_idx 
             end_idx = sample_center[j] + half_kernel_width_idx
-            
+            # print(strain[i, start_idx: end_idx].shape)
             sampled_strain[j, i, :] = strain[i, start_idx: end_idx]
 
     return sampled_strain

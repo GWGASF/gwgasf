@@ -5,7 +5,7 @@ description = ""
 authors = ["Andy Chen <andy.c.80297@gmail.com>"]
 license = "MIT"
 packages = [
-    {include = "GASF"}
+    {include = "gasf"}
 ]
 
 
