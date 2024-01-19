@@ -13,12 +13,13 @@ pandas = "^2.1.4"
 h5py = "^3.10.0"
 matplotlib = "^3.8.2"
 seaborn = "^0.13.1"
-torch = "^2.1.2"
+torch = ">=1.10, <1.13"
 scipy = "^1.11.4"
 gwpy = "^3.0.8"
 tqdm = "^4.66.1"
 torchsummary = "^1.5.1"
 scikit-learn = "^1.4.0"
+ml4gw = "0.2.0"
 
 
 [build-system]
