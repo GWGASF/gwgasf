@@ -1,3 +1,3 @@
-[submodule "ml4gw"]
-	path = ml4gw
-	url = git@github.com:AndyC80297/ml4gw.git
+[submodule "ml4gw-new"]
+	path = ml4gw-new
+	url = https://github.com/agoodmanjerry/ml4gw/
