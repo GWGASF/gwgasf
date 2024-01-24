@@ -1602,12 +1602,19 @@ files = [
 
 [[package]]
 name = "torch"
-version = "2.1.0+cu118"
+version = "2.1.2+cu118"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "torch-2.1.0+cu118-cp39-cp39-win_amd64.whl", hash = "sha256:9ac895a48dfb3fd0fc0693fa9170d01631f5379706ef44843bd72b84dbfc3d33"},
+    {file = "torch-2.1.2+cu118-cp310-cp310-linux_x86_64.whl", hash = "sha256:60396358193f238888540f4a38d78485f161e28ec17fa445f0373b5350ef21f0"},
+    {file = "torch-2.1.2+cu118-cp310-cp310-win_amd64.whl", hash = "sha256:0ddfa0336d678316ff4c35172d85cddab5aa5ded4f781158e725096926491db9"},
+    {file = "torch-2.1.2+cu118-cp311-cp311-linux_x86_64.whl", hash = "sha256:051833f6174e672eb313ee1c70dbcaf97e558dc46237215407933d28f40bca85"},
+    {file = "torch-2.1.2+cu118-cp311-cp311-win_amd64.whl", hash = "sha256:623af3c2b94c58951b71e247f39b1b7377cc94d13162a548c59ed9cf81b2b0b2"},
+    {file = "torch-2.1.2+cu118-cp38-cp38-linux_x86_64.whl", hash = "sha256:5f0a8085343b55935052f85447f4649641b45cd07fe940023aef4d8f6a7c4c65"},
+    {file = "torch-2.1.2+cu118-cp38-cp38-win_amd64.whl", hash = "sha256:0fb6318c4895d0700c6479b9c89309ffff62bd86c4fc0ee8673319945c78b275"},
+    {file = "torch-2.1.2+cu118-cp39-cp39-linux_x86_64.whl", hash = "sha256:9a36473dd38eeae4e54b2235d06b92d5e63cedbcc15877eab4a15f152fd90b4a"},
+    {file = "torch-2.1.2+cu118-cp39-cp39-win_amd64.whl", hash = "sha256:256589349b9611195fe585a5aaf616945477f73a22c481311e3dadf12fbc5cb2"},
 ]
 
 [package.dependencies]
@@ -1616,14 +1623,17 @@ fsspec = "*"
 jinja2 = "*"
 networkx = "*"
 sympy = "*"
+triton = {version = "2.1.0", markers = "platform_system == \"Linux\" and platform_machine == \"x86_64\""}
 typing-extensions = "*"
 
 [package.extras]
+dynamo = ["jinja2"]
 opt-einsum = ["opt-einsum (>=3.3)"]
 
 [package.source]
-type = "url"
-url = "https://download.pytorch.org/whl/cu118/torch-2.1.0%2Bcu118-cp39-cp39-win_amd64.whl"
+type = "legacy"
+url = "https://download.pytorch.org/whl/cu118"
+reference = "torch"
 
 [[package]]
 name = "torchsummary"
@@ -1692,6 +1702,31 @@ docs = ["myst-parser", "pydata-sphinx-theme", "sphinx"]
 test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,<7.5)", "pytest-mock", "pytest-mypy-testing"]
 
 [[package]]
+name = "triton"
+version = "2.1.0"
+description = "A language and compiler for custom Deep Learning operations"
+optional = false
+python-versions = "*"
+files = [
+    {file = "triton-2.1.0-0-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:66439923a30d5d48399b08a9eae10370f6c261a5ec864a64983bae63152d39d7"},
+    {file = "triton-2.1.0-0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:919b06453f0033ea52c13eaf7833de0e57db3178d23d4e04f9fc71c4f2c32bf8"},
+    {file = "triton-2.1.0-0-cp37-cp37m-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:ae4bb8a91de790e1866405211c4d618379781188f40d5c4c399766914e84cd94"},
+    {file = "triton-2.1.0-0-cp38-cp38-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:39f6fb6bdccb3e98f3152e3fbea724f1aeae7d749412bbb1fa9c441d474eba26"},
+    {file = "triton-2.1.0-0-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:21544e522c02005a626c8ad63d39bdff2f31d41069592919ef281e964ed26446"},
+    {file = "triton-2.1.0-0-pp37-pypy37_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:143582ca31dd89cd982bd3bf53666bab1c7527d41e185f9e3d8a3051ce1b663b"},
+    {file = "triton-2.1.0-0-pp38-pypy38_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:82fc5aeeedf6e36be4e4530cbdcba81a09d65c18e02f52dc298696d45721f3bd"},
+    {file = "triton-2.1.0-0-pp39-pypy39_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:81a96d110a738ff63339fc892ded095b31bd0d205e3aace262af8400d40b6fa8"},
+]
+
+[package.dependencies]
+filelock = "*"
+
+[package.extras]
+build = ["cmake (>=3.18)", "lit"]
+tests = ["autopep8", "flake8", "isort", "numpy", "pytest", "scipy (>=1.7.1)"]
+tutorials = ["matplotlib", "pandas", "tabulate"]
+
+[[package]]
 name = "typing-extensions"
 version = "4.9.0"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -1731,4 +1766,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
-content-hash = "bc76a7afbb17e21aa66cc0bc49766551d67c4f86b5c97d4620c84321df357d9f"
+content-hash = "8fe388efc25f94fd03569f7277ca684a5a0b368c05d0f9476025f8c49c35ead3"
