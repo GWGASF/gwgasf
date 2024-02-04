@@ -1,1 +1,0 @@
-# Gravitational Wave Mulit Class Classifier

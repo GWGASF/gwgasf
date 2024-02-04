@@ -6,12 +6,11 @@ This project harnesses the power of Gramian Angular Summation Fields (GASF) in c
 ## Getting Started
 
 ### Prerequisites
-Copy paste the following command to create the enviroment to run GASF Classifier
-
+Copy paste the following command to create the environment to run GWGASF Multiclass Classifier.
 ```
-conda create -n GASF39 python==3.9 -y
+conda create -n GASF39 python==3.9.18 poetry==1.7.1 -y
 conda activate GASF39
 
-cd ../src/GASF
+cd ../src
 poetry install
 ```
