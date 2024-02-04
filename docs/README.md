@@ -1,2 +1,2 @@
-# /docs (Documents)
+# Documents
 Directory for storage of: Overleaf documents, journals, abstracts, white papers, drafts, etc...
