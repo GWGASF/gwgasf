@@ -1,4 +1,4 @@
 [submodule "ml4gw"]
 	path = ml4gw
-	url = https://github.com/agoodmanjerry/ml4gw
-	branch = torch-2.0.1
+	url = https://github.com/agoodmanjerry/ml4gw.git
+	branch = torch-2.1.2
