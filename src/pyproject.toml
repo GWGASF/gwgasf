@@ -1,10 +1,14 @@
 [tool.poetry]
 name = "gasf"
-version = "0.1.0"
-description = "Gravitational Wave Signal Classification"
+version = "0.2.0"
+description = "Gravitational Wave Multiclass Classification"
 authors = ["Daniel Fredin <dfredin@uw.edu>, Cole Welch <colewelch151@gmail.com>"]
 license = "MIT"
 readme = "README.md"
+
+packages = [
+    {include = "gasf"}
+]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
@@ -16,6 +20,7 @@ torchsummary = ">=1.5.1"
 pyts = "=0.13.0"
 tqdm = ">=4.65.0"
 ipykernel = ">=6.19.2"
+ml4gw = {path = "../ml4gw", develop = true}
 
 [[tool.poetry.source]]
 name = "torch"
