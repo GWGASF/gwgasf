@@ -52,7 +52,7 @@ class h5_thang():
             dict: A dictonary that contains all direct acessable data
         """
         if items == None:
-            items = self.h5_keys(verbose=Falsef)
+            items = self.h5_keys(verbose=False)
             
         if verbose:
             for item in items:
