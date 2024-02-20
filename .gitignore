@@ -1,7 +1,9 @@
 *.h5
+*.hdf5
 *.png
 *.lnk
 *.exe
 *.yml
 *.txt
 *.csv
+*.json

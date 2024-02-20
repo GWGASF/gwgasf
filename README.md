@@ -14,3 +14,8 @@ conda activate GASF39
 cd ../src
 poetry install
 ```
+
+
+## Retrieving/Loading Data
+
+Since data is loaded from large h5py files, the input data for the model is stored on the [GASF shared Google Drive](https://drive.google.com/drive/folders/12jjEFBU81Y8PB7VUrPHPcZViBhm86obJ?usp=drive_link).

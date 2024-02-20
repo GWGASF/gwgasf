@@ -52,7 +52,7 @@ class h5_thang():
             dict: A dictonary that contains all direct acessable data
         """
         if items == None:
-            items = self.h5_keys(verbose=Falsef)
+            items = self.h5_keys(verbose=False)
             
         if verbose:
             for item in items:
@@ -61,6 +61,6 @@ class h5_thang():
         data_dict = {}
         with h5py.File(self.file , 'r', locking=False) as h1:
             for item in items:
-                data_dict[item] = h1[item][:]
+                data_dict[item] = h1[item][()]
                     
         return data_dict
