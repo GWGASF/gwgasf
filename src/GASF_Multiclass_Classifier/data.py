@@ -13,31 +13,19 @@ from tqdm import tqdm
 
 import random
 
-seed = 55
-np.random.seed(seed)
-torch.manual_seed(seed)
-torch.cuda.manual_seed(seed)
+class ts_data():
+    def __init__(self, file_name):
+        self.file_name = file_name
+        with h5py.File(self.file_name, 'r') as f:
+            self.keys = list(f.keys())
 
-# setting device on GPU if available, else CPU
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print('Using device:', device)
+    def get_keys(self):
+        return self.keys
 
-# Additional Info when using cuda
-# if device.type == 'cuda':
-#     print(torch.cuda.get_device_name(0))
-#     print('Memory Usage:')
-#     print('Allocated:', round(torch.cuda.memory_allocated(0)/1024**3,1), 'GB')
-#     print('Cached:   ', round(torch.cuda.memory_reserved(0)/1024**3,1), 'GB')
-
-def read_data(
-        file_name,
-        ifo,
-        key,
-        slice = [0, 1000],
-):
-    with h5py.File(file_name, 'r') as f:
-        data = f[key][slice[0]:slice[1]]
-    return data
+    def get_data(self, key):
+        with h5py.File(self.file_name, 'r') as f:
+            data = f[key][:]
+        return data
 
 def gasf_conversion(
         data,
@@ -54,80 +42,84 @@ def gasf_conversion(
 
 def main():
     ifos = ["H1", "L1"]
+    bbh_files = [
+        '/home/chiajui.chou/GW-anomaly-detection/data/dataset_inj/bbh_dataset_p1.hdf5',
+    ]
+    bg_files = dict.fromkeys(ifos)
+    glitch_files = dict.fromkeys(ifos)
+    for ifo in ifos:
+        bg_files[ifo] = [
+            f'/home/chiajui.chou/GW-anomaly-detection/data/dataset_noise/{ifo}_bg_dataset_p1.hdf5'
+        ]
+        glitch_files[ifo] = [
+            f'/home/chiajui.chou/GW-anomaly-detection/data/dataset_noise/{ifo}_glitch_dataset_p1.hdf5',
+        ]
+
     # Loading datafiles and only load a slice of the total data.
-    numSamples = 3
     bbhs = dict.fromkeys(ifos)
     bgs = dict.fromkeys(ifos)
     glitches = dict.fromkeys(ifos)
+    bbh_data = ts_data(bbh_files[0])
     for ifo in ifos:
-        file_name = '/home/chiajui.chou/GW-anomaly-detection/data/dataset_inj/bbh_dataset_p1.hdf5'
-        bbhs[ifo] = read_data(
-            file_name=file_name,
-            ifo=ifo,
-            key=ifo,
-            slice=[0, numSamples]
-        )
-        file_name = f'/home/chiajui.chou/GW-anomaly-detection/data/dataset_noise/{ifo}_bg_dataset_p1.hdf5'
-        bgs[ifo] = read_data(
-            file_name=file_name,
-            ifo=ifo,
-            key='background_noise',
-            slice=[0, numSamples]
-        )
-        file_name = f'/home/chiajui.chou/GW-anomaly-detection/data/dataset_noise/{ifo}_glitch_dataset_p1.hdf5'
-        glitches[ifo] = read_data(
-            file_name=file_name,
-            ifo=ifo,
-            key='glitch',
-            slice=[0, numSamples]
-        )
+        bbhs[ifo] = bbh_data.get_data(key=ifo)
+        bg_data = ts_data(bg_files[ifo][0])
+        bgs[ifo] = bg_data.get_data(key='background_noise')
+        glitch_data = ts_data(glitch_files[ifo][0])
+        glitches[ifo] = glitch_data.get_data(key='glitch')
+
+        # print(bbhs[ifo].shape)
+        # print(bgs[ifo].shape)
+        # print(glitches[ifo].shape)
 
     # Stacking the arrays for the H1 and L1 detectors
-    bbh_signals = np.dstack(tuple([bbhs[ifo] for ifo in ifos]))
-    bg_signals = np.dstack(tuple([bgs[ifo] for ifo in ifos]))
-    glitch_signals = np.dstack(tuple([glitches[ifo] for ifo in ifos]))
-    x_train = np.concatenate((glitch_signals, bbh_signals, bg_signals))
-    print(x_train.shape)
+    num_bbh = 3000
+    num_bg = 3000
+    num_glitch = 3000
+    bbh_signals = np.dstack(tuple([bbhs[ifo][:num_bbh] for ifo in ifos]))
+    bg_signals = np.dstack(tuple([bgs[ifo][:num_bg] for ifo in ifos]))
+    glitch_signals = np.dstack(tuple([glitches[ifo][:num_glitch] for ifo in ifos]))
+    signals = {
+        'glitch': glitch_signals,
+        'bbh': bbh_signals,
+        'bg': bg_signals,
+    }
+    for key in signals.keys():
+        print(signals[key].shape)
 
     # Multiclassifier labels
     anomaly_class = {
-        'Glitch': [1, 0, 0],
-        'BBH': [0, 1, 0],
-        'Background': [0, 0, 1],
+        'glitch': [1, 0, 0],
+        'bbh': [0, 1, 0],
+        'bg': [0, 0, 1],
     }
-    glitch_train_ids = np.full((glitch_signals.shape[0], 3), anomaly_class['Glitch'])
-    bbh_train_ids = np.full((bbh_signals.shape[0], 3), anomaly_class['BBH'])
-    bg_train_ids = np.full((bg_signals.shape[0], 3), anomaly_class['Background'])
-    y_train_ids = np.concatenate((glitch_train_ids, bbh_train_ids, bg_train_ids), axis=0)
 
     # GASF Conversion
-    # Generate the idx_train, idx_val to randomly sample from the training set and validation set.
-    idx_train = np.random.randint(0, len(x_train), size=numSamples)
+    for key in signals.keys():
+        print(key)
+        ids = np.full((signals[key].shape[0], 3), anomaly_class[key])
+        img_decs = dict.fromkeys(ifos)
+        for i, ifo in enumerate(ifos):
+            img_decs[ifo] = gasf_conversion(signals[key][:,:,i])
 
-    y_train = y_train_ids[idx_train]
-    # Convert training data to images.
-    img_x_train_decs = dict.fromkeys(ifos)
-    for i, ifo in enumerate(ifos):
-        img_x_train_decs[ifo] = gasf_conversion(x_train[idx_train,:,i])
+        imgs = np.stack([img for img in img_decs.values()], axis=1)
+        print(imgs.shape)
+
+        with h5py.File(f'/home/chiajui.chou/GASF/gwgasf/src/gasf_data/gasf_img_{key}_data.hdf5', 'w') as f:
+            img_data = imgs
+            f.create_dataset(
+                key,
+                shape=img_data.shape,
+                dtype=img_data.dtype,
+                data=img_data,
+            )
+            label_data = ids
+            f.create_dataset(
+                f'{key}_label',
+                shape=label_data.shape,
+                dtype=label_data.dtype,
+                data=label_data,
+            )
         
-    print(img_x_train_decs['H1'].shape)
-    print(img_x_train_decs['L1'].shape)
-    img_x_train = np.stack([img for img in img_x_train_decs.values()], axis=1)
-    print(img_x_train.shape)
-
-    with h5py.File('/home/chiajui.chou/GASF/gwgasf/src/gasf_data/gasf_img_train_data.hdf5', 'w') as f:
-        f.create_dataset(
-            'x_train',
-            shape=img_x_train.shape,
-            dtype=img_x_train.dtype,
-            data=img_x_train,
-        )
-        f.create_dataset(
-            'y_train',
-            shape=y_train.shape,
-            dtype=y_train.dtype,
-            data=y_train,
-        )
 
 if __name__ == "__main__":
     main()
