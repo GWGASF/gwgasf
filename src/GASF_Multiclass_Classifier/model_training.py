@@ -45,23 +45,40 @@ class CNNModel(nn.Module):
         out = self.fc3(out)
         return out
 
-def train_model(training_data, validation_data, device, model_save_path='/home/dfredin/gwgasf/models/gasf_model.pth'):
+def save_checkpoint(state, filename="checkpoint.pth.tar"):
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    torch.save(state, filename)
+    print(f"Checkpoint saved to {filename}")
+
+def load_checkpoint(filepath, model, optimizer):
+    checkpoint = torch.load(filepath)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    epoch = checkpoint['epoch']
+    loss = checkpoint['loss']
+    validation_loss = checkpoint['validation_loss']
+    print(f"Checkpoint loaded from {filepath}")
+    return model, optimizer, epoch, loss, validation_loss
+
+def train_model(training_data, validation_data, device, learning_rate, epochs, L2_reg, model_save_path='/home/dfredin/gwgasf/models/gasf_model.pth', resume_training=False):
     GASF_Model = CNNModel().to(device)
+    optimizer = torch.optim.Adam(GASF_Model.parameters(), lr=learning_rate, weight_decay=L2_reg)
+
+    if resume_training and os.path.exists(model_save_path):
+        GASF_Model, optimizer, start_epoch, _, _ = load_checkpoint(model_save_path, GASF_Model, optimizer)
+    else:
+        start_epoch = 0
+
     summary(GASF_Model, (2, 194, 194))
 
-    learning_rate = 0.0005
-    epochs = 25
-    L2_reg = 0.001
-
     loss_func = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(GASF_Model.parameters(), lr=learning_rate, weight_decay=L2_reg)
 
     cost_value = np.empty(epochs)
     cost_valid_value = np.empty(epochs)
 
-    for i in range(epochs):
+    for epoch in range(start_epoch, epochs):
         t_cost = 0
-        for j, (x, y) in enumerate(tqdm(training_data, desc=f'Epoch {i+1}')):
+        for j, (x, y) in enumerate(tqdm(training_data, desc=f'Epoch {epoch+1}')):
             x = x.to(device)
             y = y.to(device)
             p_value = GASF_Model(x)
@@ -74,9 +91,9 @@ def train_model(training_data, validation_data, device, model_save_path='/home/d
             optimizer.step()
             t_cost += cost.item()
 
-        cost_value[i] = t_cost / (j + 1)
+        cost_value[epoch] = t_cost / (j + 1)
         print('========')
-        print(f'Cost {round(cost_value[i], 2)}')
+        print(f'Cost {round(cost_value[epoch], 2)}')
         print('========', '\n')
 
         with torch.no_grad():
@@ -90,9 +107,9 @@ def train_model(training_data, validation_data, device, model_save_path='/home/d
                 b = torch.argmax(b, dim=1)
                 cost_valid = loss_func(p_value, b)
                 v_cost += cost_valid.item()
-            cost_valid_value[i] = v_cost / (run + 1)
+            cost_valid_value[epoch] = v_cost / (run + 1)
             print('===================')
-            print(f'Validation Cost {round(cost_valid_value[i], 2)}')
+            print(f'Validation Cost {round(cost_valid_value[epoch], 2)}')
             print('===================', '\n')
 
     total_epoch = np.linspace(1, epochs, epochs)
@@ -106,7 +123,11 @@ def train_model(training_data, validation_data, device, model_save_path='/home/d
     plt.show()
     plt.close()
 
-    # Save the model
-    os.makedirs(os.path.dirname(model_save_path), exist_ok=True)
-    torch.save(GASF_Model.state_dict(), model_save_path)
-    print(f'Model saved to {model_save_path}')
+    # Save the checkpoint
+    save_checkpoint({
+        'epoch': epochs,
+        'model_state_dict': GASF_Model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'loss': cost_value,
+        'validation_loss': cost_valid_value
+    }, model_save_path)
