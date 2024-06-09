@@ -1,7 +1,7 @@
-from prepare_data import prepare_data
-from test_plots import plot_data
-from model_training import train_model, CNNModel, load_checkpoint
-from confusion_matrix_analysis import confusion_matrix_analysis
+from GASF_Multiclass_Classifier.prepare_data import prepare_data
+from GASF_Multiclass_Classifier.test_plots import plot_data
+from GASF_Multiclass_Classifier.model_training import train_model, CNNModel, load_checkpoint
+from GASF_Multiclass_Classifier.confusion_matrix_analysis import confusion_matrix_analysis
 import torch
 
 # User-defined hyperparameters

@@ -1,11 +1,11 @@
 import numpy as np
 import torch
 from pyts.image import GramianAngularField
-from gasf.utils import h5_thang
 from torch.utils.data import Dataset, DataLoader
+from gasf.utils import h5_thang
 
 class MyDataset(Dataset):
-    def __init__(self, data, target, ifos=3, kernel_size=4096):
+    def __init__(self, data, target):
         self.data = torch.FloatTensor(data)
         self.targets = torch.FloatTensor(target)
     
@@ -25,13 +25,13 @@ def create_dataloaders(strains, targets):
     )
 
     testing_data = DataLoader(
-        MyDataset(strains[2], targets[2]), 
+        MyDataset(strains[1], targets[1]), 
         batch_size=32, 
         shuffle=True
     )
 
     validation_data = DataLoader(
-        MyDataset(strains[1], targets[1]), 
+        MyDataset(strains[2], targets[2]), 
         batch_size=32, 
         shuffle=True
     )
@@ -60,7 +60,7 @@ def prepare_data():
 
     ### Load dataset ###
 
-    numSamples = 3000 
+    numSamples = 5000 
 
     bbh_signals_filename = '/home/dfredin/gwgasf/data/5_2_2024/bbh_dataset_p1.hdf5'
     bbh_info = h5_thang(bbh_signals_filename)
@@ -94,29 +94,29 @@ def prepare_data():
     H1_glitch_snr = H1_glitch_info.h5_data()['glitch_info']
     L1_glitch_snr = L1_glitch_info.h5_data()['glitch_info']
 
-    h1_indices = np.where(H1_glitch_snr['snr'] >= 15)
+    h1_indices = np.where(H1_glitch_snr['snr'] >= 10)
     H1_glitch_snr_high = H1_glitch_info.h5_data()['glitch'][h1_indices]
 
-    l1_indices = np.where(L1_glitch_snr['snr'] >= 15)
+    l1_indices = np.where(L1_glitch_snr['snr'] >= 10)
     L1_glitch_snr_high = L1_glitch_info.h5_data()['glitch'][l1_indices]
 
-    H1_glitch_snr_high = H1_glitch_snr_high[0:len(L1_glitch_snr_high)]
-    L1_glitch_snr_high = L1_glitch_snr_high[0:len(L1_glitch_snr_high)]
+    # Truncate arrays to the same length
+    min_length = min(len(H1_glitch_snr_high), len(L1_glitch_snr_high))
+    H1_glitch_snr_high = H1_glitch_snr_high[:min_length]
+    L1_glitch_snr_high = L1_glitch_snr_high[:min_length]
 
     glitch_highsnr_signals = np.dstack((H1_glitch_snr_high, L1_glitch_snr_high))
-    glitch_signals = glitch_highsnr_signals
 
-    del L1_glitch_snr_high, H1_glitch_snr_high, H1_glitch_snr, L1_glitch_snr, glitch_highsnr_signals
+    del L1_glitch_snr_high, H1_glitch_snr_high, H1_glitch_snr, L1_glitch_snr
 
     ### STACK ARRAYS ###
 
     bbh_signals = np.dstack((H1_bbh, L1_bbh))
     bg_signals = np.dstack((H1_bg, L1_bg))
-    # glitch_signals = np.dstack((H1_glitch, L1_glitch))
 
     del H1_bbh, L1_bbh, H1_bg, L1_bg, H1_glitch, L1_glitch
 
-    x_train = np.concatenate((glitch_signals, bbh_signals, bg_signals))
+    x_train = np.concatenate((glitch_highsnr_signals, bbh_signals, bg_signals))
 
     anomaly_class = {
         'Glitch': [1, 0, 0],
@@ -124,15 +124,16 @@ def prepare_data():
         'Background': [0, 0, 1]
     }
 
-    glitch_train_ids = np.full((glitch_signals.shape[0], 3), anomaly_class['Glitch'])
+    glitch_train_ids = np.full((glitch_highsnr_signals.shape[0], 3), anomaly_class['Glitch'])
     bbh_train_ids = np.full((bbh_signals.shape[0], 3), anomaly_class['Signal'])
     bg_train_ids = np.full((bg_signals.shape[0], 3), anomaly_class['Background'])
 
     y_train_ids = np.concatenate((glitch_train_ids, bbh_train_ids, bg_train_ids), axis=0)
-    del bbh_signals, bg_signals, glitch_signals
+    del bbh_signals, bg_signals, glitch_highsnr_signals
     del glitch_train_ids, bbh_train_ids, bg_train_ids
 
-    n_train = 2500
+    n_train = 4000
+
     idx_train = np.random.randint(0, len(x_train), size=n_train)
     y_train = y_train_ids[idx_train]
 
@@ -160,17 +161,8 @@ def prepare_data():
     y_test_data = y_train[num_train:num_train + num_test]
     y_val_data = y_train[num_train + num_test:]
 
-    strains = [x_train_data, x_test_data, x_val_data]
-    targets = [y_train_data, y_test_data, y_val_data]
-    labels = ['Training', 'Testing', 'Validation']
-
-    array_shapes = [arr.shape for arr in strains]
-    for i, shape in enumerate(array_shapes):
-        print(f"{labels[i]} Data Shape: {shape}")
-
-    array_shapes = [arr.shape for arr in targets]
-    for i, shape in enumerate(array_shapes):
-        print(f"{labels[i]} Targets Shape: {shape}")
+    strains = [x_train_data, x_val_data, x_test_data]
+    targets = [y_train_data, y_val_data, y_test_data]
 
     training_data, testing_data, validation_data = create_dataloaders(strains, targets)
 
