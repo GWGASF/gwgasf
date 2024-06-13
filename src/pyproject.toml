@@ -21,6 +21,7 @@ pyts = "=0.13.0"
 tqdm = ">=4.65.0"
 ipykernel = ">=6.19.2"
 ml4gw = {path = "../ml4gw", develop = true}
+toml = "=0.10.2"
 
 [[tool.poetry.source]]
 name = "torch"
