@@ -1,4 +1,4 @@
-# libs/data/data_utils.py
+# src/libs/data/data_utils.py
 
 import numpy as np
 import h5py
@@ -61,10 +61,20 @@ def find_high_snr_glitches(data, snr_threshold):
 
 def stack_arrays(data, ifos):
     """Stack arrays for the H1 and L1 detectors."""
-    bbh_signals = np.dstack(tuple([data['bbh'][ifo] for ifo in ifos]))
-    bg_signals = np.dstack(tuple([data['bg'][ifo] for ifo in ifos]))
-    glitch_signals = np.dstack(tuple([data['glitch'][ifo] for ifo in ifos]))
-    
+
+    def get_min_samples(data_class):
+        return min([data[data_class][ifo].shape[0] for ifo in ifos])
+
+    # Find minimum sample size for each class
+    min_samples_bbh = get_min_samples('bbh')
+    min_samples_bg = get_min_samples('bg')
+    min_samples_glitch = get_min_samples('glitch')
+
+    # Stack arrays using the minimum sample size for each class
+    bbh_signals = np.dstack(tuple([data['bbh'][ifo][:min_samples_bbh] for ifo in ifos]))
+    bg_signals = np.dstack(tuple([data['bg'][ifo][:min_samples_bg] for ifo in ifos]))
+    glitch_signals = np.dstack(tuple([data['glitch'][ifo][:min_samples_glitch] for ifo in ifos]))
+
     signals = {'glitch': glitch_signals, 'bbh': bbh_signals, 'bg': bg_signals}
     return signals
 
