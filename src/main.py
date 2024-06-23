@@ -5,7 +5,7 @@ from libs.utils.argument_parser import parse_arguments
 from libs.data.data_utils import load_all_data, stack_arrays, convert_and_label_data, save_gasf_to_hdf5, load_gasf_from_hdf5, split_dataset
 from libs.data.create_dataloaders import create_dataloaders
 from libs.train.train_model import train_model
-from libs.train.model_utils import save_best_model, load_best_model, save_checkpoint
+from libs.train.model_utils import load_best_model
 from libs.architecture.cnn_model import CNNModel
 from libs.utils.analysis_utils import calculate_metrics, calculate_confusion_matrix
 from libs.utils.plot_utils import plot_confusion_matrix, save_confusion_matrix, plot_gasf, save_plot
@@ -32,18 +32,17 @@ def main():
 
     strains, targets = split_dataset(gasf_data, labels, config)
     
-    training_data, validation_data, testing_data = create_dataloaders(strains, targets, config['hyperparameters']['batch_size'])
+    training_data, validation_data, testing_data = create_dataloaders(strains, targets, config['hyperparameters']['batch_size'], config['hyperparameters']['seed'])
 
     # Model Training
     train_model(config, device, training_data, validation_data)
 
     # Evaluation and Analysis
-    best_model = CNNModel().to(device)
-    load_best_model(config['paths']['models_path'], best_model)
+    load_best_model(config['paths']['models_path'], CNNModel().to(device))
     
     # Plot confusion matrices for training, validation, and testing datasets
     for dataset, name in zip([training_data, validation_data, testing_data], ['Training', 'Validation', 'Test']):
-        conf_matrix = calculate_confusion_matrix(best_model, dataset, device)
+        conf_matrix = calculate_confusion_matrix(CNNModel().to(device), dataset, device)
         plot_confusion_matrix(conf_matrix, name, config['paths']['results_path'])
 
     # Visualization

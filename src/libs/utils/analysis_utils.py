@@ -23,18 +23,19 @@ def calculate_confusion_matrix(model, dataloader, device):
     num_classes = 3
     conf_matrix = torch.zeros([num_classes, num_classes]).to(device)
     num_count = torch.zeros([num_classes]).to(device)
-
+    model.eval()
     with torch.no_grad():
-        for x, y in tqdm(dataloader):
+        # for x, y in tqdm(dataloader):
+        for num, (x, y) in enumerate(tqdm(dataloader)):
             x, y = x.to(device), y.to(device)
             outputs = model(x)
             max_class = torch.argmax(outputs, axis=1)
-            preds = F.one_hot(max_class, num_classes=outputs.shape[1])
+            preds = F.one_hot(max_class, num_classes=num_classes)
             conf_matrix += torch.matmul(preds.T.type(torch.float32), y.type(torch.float32))
             num_count += y.sum(axis=0)
 
-    num_count = num_count.cpu().numpy().astype('float64')
-    conf_matrix = conf_matrix.cpu().numpy().astype('float64')
+    num_count = num_count.detach().cpu().numpy().astype('float64')
+    conf_matrix = conf_matrix.detach().cpu().numpy().astype('float64')
 
     # Normalize the confusion matrix.
     conf_matrix /= num_count

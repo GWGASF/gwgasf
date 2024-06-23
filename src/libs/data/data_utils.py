@@ -3,6 +3,9 @@
 import numpy as np
 import h5py
 from pyts.image import GramianAngularField
+import torch
+import numpy as np
+import random
 
 class ts_data:
     def __init__(self, file_name):
@@ -69,6 +72,10 @@ def stack_arrays(data, ifos):
     min_samples_bbh = get_min_samples('bbh')
     min_samples_bg = get_min_samples('bg')
     min_samples_glitch = get_min_samples('glitch')
+    # FOR TESTING PURPOSES
+    min_samples_bbh = 2000
+    min_samples_bg = 2000
+    min_samples_glitch = 2000
 
     # Stack arrays using the minimum sample size for each class
     bbh_signals = np.dstack(tuple([data['bbh'][ifo][:min_samples_bbh] for ifo in ifos]))
@@ -152,3 +159,14 @@ def split_dataset(data, labels, config):
     }
 
     return strains, targets
+
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
