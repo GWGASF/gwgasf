@@ -1,42 +1,47 @@
-# src/libs/utils/analysis_utils.py
-
 import numpy as np
 import torch
-import torch.nn.functional as F
-from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 from tqdm import tqdm
+import csv
+import os
 
-def calculate_metrics(conf_matrix):
-    """Calculate precision, recall, and F1 score."""
-    TP = np.sum(np.diag(conf_matrix))  # True Positives
-    FP = np.sum(np.sum(conf_matrix, axis=0) - np.diag(conf_matrix))  # False Positives
-    FN = np.sum(np.sum(conf_matrix, axis=1) - np.diag(conf_matrix))  # False Negatives
+def save_metrics(conf_matrix, metrics, config, dataset_name):
+    """Save precision, recall, F1 score, and support to a CSV file."""
+    save_path = config['paths']['results_path']
+    csv_file = os.path.join(save_path, f'{dataset_name}_confusion_matrix_metrics.csv')
 
-    precision = TP / (TP + FP)
-    recall = TP / (TP + FN)
-    f1 = 2 * (precision * recall) / (precision + recall)
-    return precision, recall, f1
+    # Prepare the header and data
+    header = ['Class', 'Precision', 'Recall', 'F1 Score', 'Support']
+    data = []
+    classes = ['Glitch', 'Signal', 'Background']
+    
+    for i in range(len(classes)):
+        data.append([classes[i], metrics[0][i], metrics[1][i], metrics[2][i], metrics[3][i]])
 
-def calculate_confusion_matrix(model, dataloader, device):
-    """Calculate confusion matrix."""
-    num_classes = 3
-    conf_matrix = torch.zeros([num_classes, num_classes]).to(device)
-    num_count = torch.zeros([num_classes]).to(device)
+    # Save to CSV
+    with open(csv_file, 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerows(data)
+
+def calculate_confusion_matrix(loaded_best_model, dataloader, config, dataset_name, num_classes=3):
+    """Calculate confusion matrix and metrics using sklearn."""
+    model, device = loaded_best_model
+    model.eval()
+    all_preds = []
+    all_labels = []
 
     with torch.no_grad():
         for x, y in tqdm(dataloader):
             x, y = x.to(device), y.to(device)
             outputs = model(x)
-            max_class = torch.argmax(outputs, axis=1)
-            preds = F.one_hot(max_class, num_classes=outputs.shape[1])
-            conf_matrix += torch.matmul(preds.T.type(torch.float32), y.type(torch.float32))
-            num_count += y.sum(axis=0)
+            _, preds = torch.max(outputs, 1)
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(torch.argmax(y, 1).cpu().numpy())
+    
+    conf_matrix = confusion_matrix(all_labels, all_preds, labels=range(num_classes), normalize='true')
+    metrics = precision_recall_fscore_support(all_labels, all_preds, labels=range(num_classes))
 
-    num_count = num_count.cpu().numpy().astype('float64')
-    conf_matrix = conf_matrix.cpu().numpy().astype('float64')
-
-    # Normalize the confusion matrix.
-    conf_matrix /= num_count
+    save_metrics(conf_matrix, metrics, config, dataset_name)
 
     return conf_matrix

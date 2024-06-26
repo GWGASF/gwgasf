@@ -2,6 +2,7 @@
 
 import torch
 from torch.utils.data import DataLoader, Dataset
+from libs.data.data_utils import set_seed
 
 class MyDataset(Dataset):
     def __init__(self, data, targets):
@@ -16,8 +17,13 @@ class MyDataset(Dataset):
         y = self.targets[index]
         return x, y
 
-def create_dataloaders(strains, targets, batch_size):
+def create_dataloaders(strains, targets, config):
     """Create DataLoader objects for training, testing, and validation sets."""
+    batch_size = config['hyperparameters']['batch_size']
+    seed = config['hyperparameters']['seed']
+
+
+    set_seed(seed)
     training_data = DataLoader(
         MyDataset(strains['training'], targets['training']), 
         batch_size=batch_size, 
@@ -27,13 +33,13 @@ def create_dataloaders(strains, targets, batch_size):
     validation_data = DataLoader(
         MyDataset(strains['validation'], targets['validation']), 
         batch_size=batch_size, 
-        shuffle=True
+        shuffle=False
     )
 
     testing_data = DataLoader(
         MyDataset(strains['testing'], targets['testing']), 
         batch_size=batch_size, 
-        shuffle=True
+        shuffle=False
     )
 
     return training_data, validation_data, testing_data

@@ -2,6 +2,8 @@
 
 import torch
 import os
+from libs.architecture.cnn_model import CNNModel
+from libs.data.data_utils import set_seed
 
 def save_checkpoint(path, model, optimizer, epoch, loss):
     """Save model checkpoint."""
@@ -28,22 +30,10 @@ def save_best_model(model, path):
     os.makedirs(path, exist_ok=True)
     torch.save(model.state_dict(), os.path.join(path, 'best_model.pth'))
 
-def load_best_model(path, model):
+def load_best_model(config, device):
     """Load the best saved model for evaluation."""
+    set_seed(config['hyperparameters']['seed'])
+    path = config['paths']['models_path']
+    model = CNNModel().to(device)
     model.load_state_dict(torch.load(os.path.join(path, 'best_model.pth')))
-
-def calculate_training_loss(outputs, targets, criterion):
-    """Calculate training loss."""
-    return criterion(outputs, targets)
-
-def calculate_validation_loss(model, dataloader, criterion, device):
-    """Calculate validation loss."""
-    model.eval()
-    validation_loss = 0
-    with torch.no_grad():
-        for x, y in dataloader:
-            x, y = x.to(device), y.to(device)
-            outputs = model(x)
-            loss = criterion(outputs, y)
-            validation_loss += loss.item()
-    return validation_loss / len(dataloader)
+    return model, device
