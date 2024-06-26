@@ -6,6 +6,8 @@ from pyts.image import GramianAngularField
 import torch
 import numpy as np
 import random
+import glob
+import os
 
 class ts_data:
     def __init__(self, file_name):
@@ -21,68 +23,80 @@ class ts_data:
             data = f[key][:]
         return data
 
-def get_file_paths(data_path, ifos):
-    """Return all file paths needed."""
-    paths = {
-        'bbh': data_path + 'bbh_dataset_p1.hdf5',
-        'H1_bg': data_path + 'H1_bg_dataset_p1.hdf5',
-        'L1_bg': data_path + 'L1_bg_dataset_p1.hdf5',
-        'H1_glitch': data_path + 'H1_glitch_dataset_p1.hdf5',
-        'L1_glitch': data_path + 'L1_glitch_dataset_p1.hdf5'
-    }
-    return paths
-
-def load_data(file_path):
-    """Load data from an HDF5 file."""
-    with h5py.File(file_path, 'r') as f:
-        data = {key: np.array(f[key]) for key in f.keys()}
-    return data
-
-def load_all_data(data_path, ifos, apply_snr_filter, snr_threshold):
+def load_all_data(config):
     """Load all datasets (BBH, background, glitch) using data_path."""
-    file_paths = get_file_paths(data_path, ifos)
+    data_path = config['paths']['data_path'] + 'raw_data/'
+    ifos = config['options']['ifos']
+    apply_snr_filter = config['options']['apply_snr_filter']
+    snr_threshold = config['options']['snr_threshold']
+    file_paths = get_file_paths(data_path)
     
+    def load_files(files, key):
+        data_list = []
+        for file in files:
+            data_list.append(ts_data(file).get_data(key))
+        return np.concatenate(data_list)
+
     # Load datasets
-    bbhs = {ifo: ts_data(file_paths['bbh']).get_data(ifo) for ifo in ifos}
-    bgs = {ifo: ts_data(file_paths[f'{ifo}_bg']).get_data('background_noise') for ifo in ifos}
-    glitches = {ifo: ts_data(file_paths[f'{ifo}_glitch']).get_data('glitch') for ifo in ifos}
+    bbhs = {ifo: load_files(file_paths['bbh'], ifo) for ifo in ifos}
+    bgs = {ifo: load_files(file_paths[f'{ifo}_bg'], 'background_noise') for ifo in ifos}
+    glitches = {ifo: load_files(file_paths[f'{ifo}_glitch'], 'glitch') for ifo in ifos}
 
     data = {'bbh': bbhs, 'bg': bgs, 'glitch': glitches}
 
     if apply_snr_filter:
-        data = find_high_snr_glitches(data, snr_threshold)
+        glitch_info = {ifo: load_files(file_paths[f'{ifo}_glitch'], 'glitch_info') for ifo in ifos}
+        glitch_snr = {ifo: glitch_info[ifo]['snr'] for ifo in ifos}
+        snr_glitches = find_high_snr_glitches(data, glitch_snr, snr_threshold)
+        data = {'bbh': bbhs, 'bg': bgs, 'glitch': snr_glitches}
 
     return data
 
-def find_high_snr_glitches(data, snr_threshold):
+# Finds all files with these prefixes
+def get_file_paths(data_path):
+    """Return all file paths needed."""
+    file_patterns = [
+        'bbh_dataset_p*.hdf5',
+        'H1_bg_dataset_p*.hdf5',
+        'L1_bg_dataset_p*.hdf5',
+        'H1_glitch_dataset_p*.hdf5',
+        'L1_glitch_dataset_p*.hdf5'
+    ]
+
+    paths = {}
+    for pattern in file_patterns:
+        matched_files = glob.glob(os.path.join(data_path, pattern))
+        if matched_files:
+            if pattern.startswith('bbh'):
+                key = pattern.split('_')[0]
+            else:
+                key = '_'.join(pattern.split('_')[:2])
+            paths[key] = matched_files[::-1]  # Reverse the list of matched files
+
+    return paths
+
+def find_high_snr_glitches(data, glitch_snr, snr_threshold):
     """Find high SNR glitches."""
+    snr_data = {}
     for ifo in data['glitch']:
-        glitch_snr = data['glitch'][ifo]['glitch_info']
-        indices = np.where(glitch_snr['snr'] >= snr_threshold)
-        data['glitch'][ifo] = data['glitch'][ifo]['glitch'][indices]
-    return data
+        indices = np.where(glitch_snr[ifo] >= snr_threshold)
+        snr_data[ifo] = data['glitch'][ifo][indices]
+    return snr_data
 
-def stack_arrays(data, ifos):
+def stack_arrays(data, config):
     """Stack arrays for the H1 and L1 detectors."""
+    ifos = config['options']['ifos']
+    num_samples = {
+        'bbh': min(min([data['bbh'][ifo].shape[0] for ifo in ifos]), config['options']['num_bbh']),
+        'bg': min(min([data['bg'][ifo].shape[0] for ifo in ifos]), config['options']['num_bg']),
+        'glitch': min(min([data['glitch'][ifo].shape[0] for ifo in ifos]), config['options']['num_glitch'])
+    }
 
-    def get_min_samples(data_class):
-        return min([data[data_class][ifo].shape[0] for ifo in ifos])
+    signals = {
+        key: np.dstack([data[key][ifo][:num_samples[key]] for ifo in ifos])
+        for key in num_samples
+    }
 
-    # Find minimum sample size for each class
-    min_samples_bbh = get_min_samples('bbh')
-    min_samples_bg = get_min_samples('bg')
-    min_samples_glitch = get_min_samples('glitch')
-    # FOR TESTING PURPOSES
-    min_samples_bbh = 2000
-    min_samples_bg = 2000
-    min_samples_glitch = 2000
-
-    # Stack arrays using the minimum sample size for each class
-    bbh_signals = np.dstack(tuple([data['bbh'][ifo][:min_samples_bbh] for ifo in ifos]))
-    bg_signals = np.dstack(tuple([data['bg'][ifo][:min_samples_bg] for ifo in ifos]))
-    glitch_signals = np.dstack(tuple([data['glitch'][ifo][:min_samples_glitch] for ifo in ifos]))
-
-    signals = {'glitch': glitch_signals, 'bbh': bbh_signals, 'bg': bg_signals}
     return signals
 
 def convert_and_label_data(data, config):
@@ -105,15 +119,21 @@ def convert_and_label_data(data, config):
     
     return gasf_data, labels
 
-def save_gasf_to_hdf5(data, labels, file_path):
+def save_gasf_to_hdf5(data, labels, config):
     """Save GASF data and labels to HDF5 file."""
+    file_path = config['paths']['data_path'] + 'gasf_data/gasf_data.hdf5'
     with h5py.File(file_path, 'w') as f:
         for key in data:
             f.create_dataset(key, data=data[key])
             f.create_dataset(f'{key}_label', data=labels[key])
 
-def load_gasf_from_hdf5(file_path, num_bbh, num_bg, num_glitch):
+def load_gasf_from_hdf5(config):
     """Load GASF data and labels from HDF5 file."""
+    file_path = config['paths']['data_path'] + 'gasf_data/gasf_data.hdf5'
+    num_bbh = config['options']['num_bbh']
+    num_bg = config['options']['num_bg']
+    num_glitch = config['options']['num_glitch']
+
     with h5py.File(file_path, 'r') as f:
         data = {
             'bbh': np.array(f['bbh'][:num_bbh]),

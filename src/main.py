@@ -1,14 +1,11 @@
-# main.py
-
 import torch
 from libs.utils.argument_parser import parse_arguments
 from libs.data.data_utils import load_all_data, stack_arrays, convert_and_label_data, save_gasf_to_hdf5, load_gasf_from_hdf5, split_dataset
 from libs.data.create_dataloaders import create_dataloaders
 from libs.train.train_model import train_model
 from libs.train.model_utils import load_best_model
-from libs.architecture.cnn_model import CNNModel
-from libs.utils.analysis_utils import calculate_metrics, calculate_confusion_matrix
-from libs.utils.plot_utils import plot_confusion_matrix, save_confusion_matrix, plot_gasf, save_plot
+from libs.utils.analysis_utils import calculate_confusion_matrix
+from libs.utils.plot_utils import plot_confusion_matrix, plot_gasf, save_plot
 
 def main():
     # Load arguments from the TOML file
@@ -18,32 +15,27 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Data Preparation
-    ifos = config['options']['ifos']
     if config['options']['create_new_gasf']:
-        data = load_all_data(config['paths']['data_path'] + 'raw_data/', ifos, config['options']['apply_snr_filter'], config['options']['snr_threshold'])
-        data = stack_arrays(data, ifos)
+        data = load_all_data(config)
+        data = stack_arrays(data, config)
         gasf_data, labels = convert_and_label_data(data, config)
-        save_gasf_to_hdf5(gasf_data, labels, config['paths']['data_path'] + 'gasf_data/gasf_data.hdf5')
+        save_gasf_to_hdf5(gasf_data, labels, config)
     else:
-        num_bbh = config['options']['num_bbh']
-        num_bg = config['options']['num_bg']
-        num_glitch = config['options']['num_glitch']
-        gasf_data, labels = load_gasf_from_hdf5(config['paths']['data_path'] + 'gasf_data/gasf_data.hdf5', num_bbh, num_bg, num_glitch)
+        gasf_data, labels = load_gasf_from_hdf5(config)
 
     strains, targets = split_dataset(gasf_data, labels, config)
     
-    training_data, validation_data, testing_data = create_dataloaders(strains, targets, config['hyperparameters']['batch_size'], config['hyperparameters']['seed'])
+    training_data, validation_data, testing_data = create_dataloaders(strains, targets, config)
 
     # Model Training
     train_model(config, device, training_data, validation_data)
 
     # Evaluation and Analysis
-    load_best_model(config['paths']['models_path'], CNNModel().to(device))
-    
+   
     # Plot confusion matrices for training, validation, and testing datasets
     for dataset, name in zip([training_data, validation_data, testing_data], ['Training', 'Validation', 'Test']):
-        conf_matrix = calculate_confusion_matrix(CNNModel().to(device), dataset, device)
-        plot_confusion_matrix(conf_matrix, name, config['paths']['results_path'])
+        conf_matrix = calculate_confusion_matrix(load_best_model(config, device), dataset, config, name)
+        plot_confusion_matrix(conf_matrix, name, config)
 
     # Visualization
     # fig = plot_gasf(gasf_data['bbh'], "GASF Data")  # Example for bbh

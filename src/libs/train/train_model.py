@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from torchsummary import summary
-from libs.train.model_utils import save_checkpoint, save_best_model, load_checkpoint, calculate_training_loss, calculate_validation_loss
+from libs.train.model_utils import save_checkpoint, save_best_model, load_checkpoint
 from libs.architecture.cnn_model import CNNModel
 from libs.utils.plot_utils import plot_training_validation_loss
 from libs.data.data_utils import set_seed

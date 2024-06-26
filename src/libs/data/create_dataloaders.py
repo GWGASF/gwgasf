@@ -17,8 +17,12 @@ class MyDataset(Dataset):
         y = self.targets[index]
         return x, y
 
-def create_dataloaders(strains, targets, batch_size, seed):
+def create_dataloaders(strains, targets, config):
     """Create DataLoader objects for training, testing, and validation sets."""
+    batch_size = config['hyperparameters']['batch_size']
+    seed = config['hyperparameters']['seed']
+
+
     set_seed(seed)
     training_data = DataLoader(
         MyDataset(strains['training'], targets['training']), 
