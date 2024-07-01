@@ -25,7 +25,7 @@ class ts_data:
 
 def load_all_data(config):
     """Load all datasets (BBH, background, glitch) using data_path."""
-    data_path = config['paths']['data_path'] + 'raw_data/'
+    data_path = config['paths']['data_path'] + '6_6_2024/'      # TODO Move to arguments.toml for platform-agnostic behavior (all in one place)
     ifos = config['options']['ifos']
     apply_snr_filter = config['options']['apply_snr_filter']
     snr_threshold = config['options']['snr_threshold']
