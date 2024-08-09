@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "gasf"
+version = "0.2.0"
+description = "Gravitational Wave Multiclass Classification"
+authors = ["Daniel Fredin <dfredin@uw.edu>, Cole Welch <colewelch151@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+packages = [
+    {include = "gasf"}
+]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.12"
+numpy = ">=1.24.1"
+matplotlib = ">=3.7.1"
+h5py = ">=3.7.0"
+torch = {version = "2.1.2", source = "torch"}
+torchsummary = ">=1.5.1"
+pyts = "=0.13.0"
+tqdm = ">=4.65.0"
+ipykernel = ">=6.19.2"
+ml4gw = {path = "../ml4gw", develop = true}
+toml = "=0.10.2"
+
+[[tool.poetry.source]]
+name = "torch"
+url = "https://download.pytorch.org/whl/cu118"
+priority = "explicit"
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
