@@ -21,7 +21,7 @@ RUN pip install pyts==0.13.0 \
 WORKDIR /app/repository
 
 # Clone the GitHub repository into the current working directory
-RUN git clone https://gitlab.nrp-nautilus.io/gwgasf/gwgasf.git
+RUN git clone ssh://git@gitlab-ssh.nrp-nautilus.io:30622/gwgasf/gwgasf.git
 
 # Cleanup to reduce image size
 RUN apt-get remove -y git \
