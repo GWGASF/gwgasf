@@ -1,3 +1,7 @@
+# Use BuildKit to forward SSH agent
+# Enable SSH support
+# syntax=docker/dockerfile:1.2
+
 FROM ubuntu:22.04
 
 # Install dependencies and Python 3.9
@@ -18,10 +22,10 @@ RUN pip install pyts==0.13.0 \
     && pip install torchsummary==1.5.1
 
 # Set the working directory
-WORKDIR /app/repository
+WORKDIR /app/gwgasf
 
-# Clone the GitHub repository into the current working directory
-RUN git clone ssh://git@gitlab-ssh.nrp-nautilus.io:30622/gwgasf/gwgasf.git
+# Clone the GitHub repository into the current working directory using SSH
+RUN --mount=type=ssh git clone ssh://git@gitlab-ssh.nrp-nautilus.io:30622/gwgasf/gwgasf.git .
 
 # Cleanup to reduce image size
 RUN apt-get remove -y git \
@@ -29,4 +33,4 @@ RUN apt-get remove -y git \
     && rm -rf /var/lib/apt/lists/*
 
 # Command to run your script
-CMD ["python3", "gwgasf/src/main.py"]
+CMD ["python3", "src/main.py"]
