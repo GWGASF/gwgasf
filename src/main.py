@@ -9,7 +9,7 @@ from libs.utils.plot_utils import plot_confusion_matrix, plot_gasf, save_plot
 
 def main():
     # Load arguments from the TOML file
-    config = parse_arguments('src/arguments.toml')
+    config = parse_arguments('gwgasf/src/arguments.toml')
 
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
