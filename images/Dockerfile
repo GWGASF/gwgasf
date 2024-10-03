@@ -16,6 +16,7 @@ RUN pip install pyts==0.13.0 \
     && pip install tqdm==4.65.0 \
     && pip install toml==0.10.2 \
     && pip install s3cmd==2.2.0 \
+    && pip install s3fs \
     && pip install torch==2.1.2 \
     && pip install torchsummary==1.5.1
 

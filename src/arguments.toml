@@ -1,10 +1,10 @@
 # arguments.toml
 
 [paths]
-base_path = "gwgasf/"
-data_path = "gwgasf/data/"
-results_path = "gwgasf/results/figures/"
-models_path = "gwgasf/models/"
+base_path = "../"
+data_path = "data/"
+results_path = "results/figures/"
+models_path = "models/"
 
 [hyperparameters]
 learning_rate = 0.0005
