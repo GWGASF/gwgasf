@@ -2,9 +2,18 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 import os
 import numpy as np
+import logging
+import tempfile
+from libs.utils.s3_helper import create_s3_filesystem
 
-def plot_training_validation_loss(training_loss, validation_loss, epochs, save_path):
-    """Plot training and validation loss vs epochs and save the plot."""
+def plot_training_validation_loss(training_loss, validation_loss, epochs, path):
+    """Plot training and validation loss vs epochs and save the plot to S3."""
+    fs = create_s3_filesystem()  # Create the S3 filesystem
+    # save_path_s3 = config['paths']['results_path'] + 'train_val_Loss.png'
+    save_path_s3 = os.path.join(path, "train_val_Loss.png")
+
+
+    # Plot the training and validation loss
     total_epoch = np.linspace(1, epochs, epochs)
     plt.title('Loss value to epoch')
     plt.plot(total_epoch, training_loss, label='Training Set')
@@ -12,14 +21,35 @@ def plot_training_validation_loss(training_loss, validation_loss, epochs, save_p
     plt.xlabel('Epoch')
     plt.ylabel('Loss Value')
     plt.legend()
-    os.makedirs(save_path, exist_ok=True)
-    plt.savefig(f'{save_path}/train_val_Loss.png', bbox_inches='tight')
-    plt.show()
-    plt.close()
+
+    # Save the plot to a temporary local file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+        temp_file_path = tmp_file.name
+        logging.info(f"Temporary file created for loss plot: {temp_file_path}")
+        plt.savefig(temp_file_path, bbox_inches='tight')
+        plt.close()
+
+    # Upload the plot to S3
+    try:
+        logging.info(f"Uploading loss plot to S3 at {save_path_s3}")
+        fs.put(temp_file_path, save_path_s3)  # Upload to S3
+        logging.info(f"Successfully uploaded loss plot to {save_path_s3}")
+    except Exception as e:
+        logging.error(f"Failed to upload loss plot to S3: {e}")
+
+    # Clean up the local temporary file
+    try:
+        os.remove(temp_file_path)
+        logging.info(f"Temporary file {temp_file_path} deleted.")
+    except Exception as e:
+        logging.error(f"Failed to delete temporary file {temp_file_path}: {e}")
 
 def plot_confusion_matrix(conf_matrix, title, config):
-    """Plot confusion matrix using sklearn's ConfusionMatrixDisplay and save the plot."""
-    save_path = config['paths']['results_path']
+    """Plot confusion matrix using sklearn's ConfusionMatrixDisplay and save the plot to S3."""
+    fs = create_s3_filesystem()  # Create the S3 filesystem
+    save_path_s3 = config['paths']['results_path'] + f'{title}_confusion_matrix.png'
+
+    # Plot the confusion matrix
     disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=['Glitch', 'Signal', 'Background'])
     
     fig, ax = plt.subplots(figsize=(10, 10))
@@ -40,9 +70,27 @@ def plot_confusion_matrix(conf_matrix, title, config):
             # Adjust the position of the custom label
             ax.text(j, i - 0.1, lab[i, j], ha='center', va='center', color='black')
 
-    os.makedirs(save_path, exist_ok=True)
-    plt.savefig(os.path.join(save_path, f'{title}_confusion_matrix.png'), bbox_inches='tight')
-    plt.close()
+    # Save the plot to a temporary local file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+        temp_file_path = tmp_file.name
+        logging.info(f"Temporary file created for plot: {temp_file_path}")
+        plt.savefig(temp_file_path, bbox_inches='tight')
+        plt.close()
+
+    # Upload the plot to S3
+    try:
+        logging.info(f"Uploading plot to S3 at {save_path_s3}")
+        fs.put(temp_file_path, save_path_s3)  # Upload to S3
+        logging.info(f"Successfully uploaded plot to {save_path_s3}")
+    except Exception as e:
+        logging.error(f"Failed to upload plot to S3: {e}")
+
+    # Clean up the local temporary file
+    try:
+        os.remove(temp_file_path)
+        logging.info(f"Temporary file {temp_file_path} deleted.")
+    except Exception as e:
+        logging.error(f"Failed to delete temporary file {temp_file_path}: {e}")
 
 def plot_gasf(data, title):
     """Plot GASF data."""
@@ -58,8 +106,3 @@ def plot_time_series(data, title):
     ax.plot(data[0])
     plt.title(title)
     return fig
-
-def save_plot(fig, filename):
-    """Save plots to a file."""
-    os.makedirs(os.path.dirname(filename), exist_ok=True)
-    fig.savefig(filename)

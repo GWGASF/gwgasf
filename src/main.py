@@ -1,11 +1,15 @@
 import torch
+import logging
 from libs.utils.argument_parser import parse_arguments
 from libs.data.data_utils import load_all_data, stack_arrays, convert_and_label_data, save_gasf_to_hdf5, load_gasf_from_hdf5, split_dataset
 from libs.data.create_dataloaders import create_dataloaders
 from libs.train.train_model import train_model
 from libs.train.model_utils import load_best_model
 from libs.utils.analysis_utils import calculate_confusion_matrix
-from libs.utils.plot_utils import plot_confusion_matrix, plot_gasf, save_plot
+from libs.utils.plot_utils import plot_confusion_matrix, plot_gasf
+
+logging.basicConfig(level=logging.INFO)
+
 
 def main():
     # Load arguments from the TOML file

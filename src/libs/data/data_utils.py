@@ -1,5 +1,6 @@
 # src/libs/data/data_utils.py
 
+from libs.utils.s3_helper import create_s3_filesystem
 import numpy as np
 import h5py
 from pyts.image import GramianAngularField
@@ -8,6 +9,9 @@ import numpy as np
 import random
 import glob
 import os
+import tempfile
+import logging
+import re
 
 class ts_data:
     def __init__(self, file_name):
@@ -25,27 +29,33 @@ class ts_data:
 
 def load_all_data(config):
     """Load all datasets (BBH, background, glitch) using data_path."""
-    data_path = config['paths']['data_path'] + 'raw_data/'
+    fs = create_s3_filesystem()
+    inj_data_path = config['paths']['data_path_inj']  # Injected dataset path
+    noise_data_path = config['paths']['data_path_noise']  # Noise dataset path
+        
     ifos = config['options']['ifos']
     apply_snr_filter = config['options']['apply_snr_filter']
     snr_threshold = config['options']['snr_threshold']
-    file_paths = get_file_paths(data_path)
     
+    # Load files from S3 paths
+    inj_file_paths = get_file_paths(inj_data_path, fs)
+    noise_file_paths = get_file_paths(noise_data_path, fs)
     def load_files(files, key):
         data_list = []
         for file in files:
-            data_list.append(ts_data(file).get_data(key))
+            with fs.open(file, 'rb') as f:
+                data_list.append(ts_data(f).get_data(key))
         return np.concatenate(data_list)
 
     # Load datasets
-    bbhs = {ifo: load_files(file_paths['bbh'], ifo) for ifo in ifos}
-    bgs = {ifo: load_files(file_paths[f'{ifo}_bg'], 'background_noise') for ifo in ifos}
-    glitches = {ifo: load_files(file_paths[f'{ifo}_glitch'], 'glitch') for ifo in ifos}
+    bbhs = {ifo: load_files(inj_file_paths['bbh'], ifo) for ifo in ifos}
+    bgs = {ifo: load_files(noise_file_paths[f'{ifo}_bg'], 'background_noise') for ifo in ifos}
+    glitches = {ifo: load_files(noise_file_paths[f'{ifo}_glitch'], 'glitch') for ifo in ifos}
 
     data = {'bbh': bbhs, 'bg': bgs, 'glitch': glitches}
 
     if apply_snr_filter:
-        glitch_info = {ifo: load_files(file_paths[f'{ifo}_glitch'], 'glitch_info') for ifo in ifos}
+        glitch_info = {ifo: load_files(noise_file_paths[f'{ifo}_glitch'], 'glitch_info') for ifo in ifos}
         glitch_snr = {ifo: glitch_info[ifo]['snr'] for ifo in ifos}
         snr_glitches = find_high_snr_glitches(data, glitch_snr, snr_threshold)
         data = {'bbh': bbhs, 'bg': bgs, 'glitch': snr_glitches}
@@ -53,8 +63,8 @@ def load_all_data(config):
     return data
 
 # Finds all files with these prefixes
-def get_file_paths(data_path):
-    """Return all file paths needed."""
+def get_file_paths(data_path, fs):
+    """Return all file paths needed using s3fs, sorted numerically."""
     file_patterns = [
         'bbh_dataset_p*.hdf5',
         'H1_bg_dataset_p*.hdf5',
@@ -64,15 +74,23 @@ def get_file_paths(data_path):
     ]
 
     paths = {}
+
+    # Function to extract the numerical part from the filename
+    def extract_number_from_path(path):
+        match = re.search(r'p(\d+)', path)  # Look for the number after 'p' in the filename
+        return int(match.group(1)) if match else float('inf')  # Use infinity if no match is found
+
     for pattern in file_patterns:
-        matched_files = glob.glob(os.path.join(data_path, pattern))
+        matched_files = fs.glob(os.path.join(data_path, pattern))
         if matched_files:
+            # Sort the matched files based on the extracted number
+            matched_files.sort(key=extract_number_from_path)
+            
             if pattern.startswith('bbh'):
                 key = pattern.split('_')[0]
             else:
                 key = '_'.join(pattern.split('_')[:2])
-            paths[key] = matched_files[::-1]  # Reverse the list of matched files
-
+            paths[key] = matched_files
     return paths
 
 def find_high_snr_glitches(data, glitch_snr, snr_threshold):
@@ -120,31 +138,56 @@ def convert_and_label_data(data, config):
     return gasf_data, labels
 
 def save_gasf_to_hdf5(data, labels, config):
-    """Save GASF data and labels to HDF5 file."""
-    file_path = config['paths']['data_path'] + 'gasf_data/gasf_data.hdf5'
-    with h5py.File(file_path, 'w') as f:
-        for key in data:
-            f.create_dataset(key, data=data[key])
-            f.create_dataset(f'{key}_label', data=labels[key])
+    """Save GASF data and labels to HDF5 file in S3."""
+    fs = create_s3_filesystem()
+    file_path_s3 = config['paths']['data_path'] + 'gasf_data.hdf5'
+
+    # Write to a temporary file locally
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".hdf5") as tmp_file:
+        temp_file_path = tmp_file.name
+        logging.info(f"Temporary file created: {temp_file_path}")
+        with h5py.File(temp_file_path, 'w') as hf:
+            for key in data:
+                hf.create_dataset(key, data=data[key])
+                hf.create_dataset(f'{key}_label', data=labels[key])
+
+    # Attempt to upload the temporary file to S3 using fs.put
+    try:
+        logging.info(f"Uploading {temp_file_path} to S3 at {file_path_s3}")
+        fs.put(temp_file_path, file_path_s3)  # Use fs.put for direct file copy to S3
+        logging.info(f"Successfully uploaded {temp_file_path} to {file_path_s3}")
+    except Exception as e:
+        logging.error(f"Failed to upload {temp_file_path} to S3: {e}")
+
+    # Clean up the local temporary file
+    try:
+        os.remove(temp_file_path)
+        logging.info(f"Temporary file {temp_file_path} deleted.")
+    except Exception as e:
+        logging.error(f"Failed to delete temporary file {temp_file_path}: {e}")
 
 def load_gasf_from_hdf5(config):
-    """Load GASF data and labels from HDF5 file."""
-    file_path = config['paths']['data_path'] + 'gasf_data/gasf_data.hdf5'
-    num_bbh = config['options']['num_bbh']
-    num_bg = config['options']['num_bg']
-    num_glitch = config['options']['num_glitch']
-
-    with h5py.File(file_path, 'r') as f:
-        data = {
-            'bbh': np.array(f['bbh'][:num_bbh]),
-            'bg': np.array(f['bg'][:num_bg]),
-            'glitch': np.array(f['glitch'][:num_glitch])
-        }
-        labels = {
-            'bbh': np.array(f['bbh_label'][:num_bbh]),
-            'bg': np.array(f['bg_label'][:num_bg]),
-            'glitch': np.array(f['glitch_label'][:num_glitch])
-        }
+    """Load GASF data and labels from HDF5 file in S3."""
+    file_path = config['paths']['data_path'] + 'gasf_data.hdf5'
+    fs = create_s3_filesystem()
+    
+    with fs.open(file_path, 'rb') as f:
+        with h5py.File(f, 'r') as hf:
+            num_bbh = config['options']['num_bbh']
+            num_bg = config['options']['num_bg']
+            num_glitch = config['options']['num_glitch']
+            
+            data = {
+                'bbh': np.array(hf['bbh'][:num_bbh]),
+                'bg': np.array(hf['bg'][:num_bg]),
+                'glitch': np.array(hf['glitch'][:num_glitch])
+            }
+            labels = {
+                'bbh': np.array(hf['bbh_label'][:num_bbh]),
+                'bg': np.array(hf['bg_label'][:num_bg]),
+                'glitch': np.array(hf['glitch_label'][:num_glitch])
+            }
+    
     return data, labels
 
 def split_dataset(data, labels, config):

@@ -53,8 +53,8 @@ def train_model(config, device, training_data, validation_data):
 
         print(f"Epoch {epoch+1}/{config['hyperparameters']['epochs']}, Training Loss: {avg_training_loss}, Validation Loss: {avg_validation_loss}")
 
-        # Save checkpoint
-        save_checkpoint(config['paths']['models_path'], model, optimizer, epoch + 1, avg_validation_loss)
+        # # Save checkpoint
+        # save_checkpoint(config['paths']['models_path'], model, optimizer, epoch + 1, avg_validation_loss)
 
         # Save the best model
         if avg_validation_loss < best_val_loss:
