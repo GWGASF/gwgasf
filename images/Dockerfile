@@ -36,5 +36,5 @@ RUN apt-get remove -y git \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
-# Command to run the script when the container starts
-CMD ["python3", "src/main.py"]
+# # Command to run the script when the container starts
+# CMD ["python3", "src/main.py"]
