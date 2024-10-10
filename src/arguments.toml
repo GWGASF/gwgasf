@@ -2,11 +2,11 @@
 
 [paths]
 base_path = "../"
-data_path_inj = "s3://dfredin/dataset_inj/"
-data_path_noise = "s3://dfredin/dataset_noise/"
-data_path = "s3://dfredin/dataset_gasf/"
-models_path = "s3://dfredin/models/"
-results_path = "s3://dfredin/results/"
+data_path_inj = "s3://cchou/dataset_inj/"
+data_path_noise = "s3://cchou/dataset_noise/"
+data_path = "s3://cchou/dataset_gasf/"
+models_path = "s3://cchou/models/"
+results_path = "s3://cchou/results/"
 
 [hyperparameters]
 learning_rate = 0.0005
