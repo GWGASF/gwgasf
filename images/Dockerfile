@@ -3,9 +3,9 @@
 FROM ubuntu:22.04
 
 # Install dependencies and Python 3.9
-RUN apt -y update \
-    && apt -y upgrade \
-    && apt -y install python3 python3-pip git nano \
+RUN apt-get -y update \
+    && apt-get -y upgrade \
+    && apt-get -y install python3 python3-pip git nano \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python packages
