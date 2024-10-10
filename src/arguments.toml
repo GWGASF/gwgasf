@@ -10,7 +10,7 @@ results_path = "s3://dfredin/results/"
 
 [hyperparameters]
 learning_rate = 0.0005
-epochs = 5
+epochs = 20
 L2_reg = 0.001
 batch_size = 32
 seed = 55
@@ -25,6 +25,6 @@ snr_threshold = 12
 apply_snr_filter = false
 ifos = ["H1", "L1"]
 create_new_gasf = true
-num_bbh = 3000
-num_bg = 3000
-num_glitch = 3000
+num_bbh = 50000
+num_bg = 50000
+num_glitch = 50000
