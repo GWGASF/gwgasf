@@ -6,6 +6,7 @@ FROM ubuntu:22.04
 RUN apt -y update \
     && apt -y upgrade \
     && apt -y install python3 python3-pip git \
+    && apt -y nano \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python packages

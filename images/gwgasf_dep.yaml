@@ -17,13 +17,31 @@ spec:
       containers:
       - name: gwgasfpod
         image: gitlab-registry.nrp-nautilus.io/gwgasf/gwgasf:latest
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: s3-credentials
+              key: access_key
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: s3-credentials
+              key: secret_key
+        - name: AWS_S3_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: s3-credentials
+              key: host_base
         resources:
            limits:
-             memory: 12Gi
-             cpu: 10000m
-             ephemeral-storage: 20Gi  
+             memory: 24Gi
+             cpu: 15000m
+             ephemeral-storage: 20Gi
+             nvidia.com/gpu: 1  
            requests:
-             memory: 1Gi
-             cpu: 1000m
-             ephemeral-storage: 1Gi  
+             memory: 20Gi
+             cpu: 12000m
+             ephemeral-storage: 1Gi 
+             nvidia.com/gpu: 1
         command: ["sh", "-c", "sleep infinity"]
