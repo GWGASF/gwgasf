@@ -35,13 +35,13 @@ spec:
               key: host_base
         resources:
            limits:
-             memory: 24Gi
-             cpu: 15000m
-             ephemeral-storage: 20Gi
+             memory: 256Gi
+             cpu: 30000m
+             ephemeral-storage: 250Gi
              nvidia.com/gpu: 1  
            requests:
-             memory: 20Gi
-             cpu: 12000m
-             ephemeral-storage: 1Gi 
+             memory: 175i
+             cpu: 20000m
+             ephemeral-storage: 60Gi 
              nvidia.com/gpu: 1
         command: ["sh", "-c", "sleep infinity"]

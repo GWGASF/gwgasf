@@ -1,3 +1,5 @@
+# src/main.py
+
 import torch
 import logging
 from libs.utils.argument_parser import parse_arguments
@@ -6,10 +8,9 @@ from libs.data.create_dataloaders import create_dataloaders
 from libs.train.train_model import train_model
 from libs.train.model_utils import load_best_model
 from libs.utils.analysis_utils import calculate_confusion_matrix
-from libs.utils.plot_utils import plot_confusion_matrix, plot_gasf
+from libs.utils.plot_utils import plot_confusion_matrix
 
 logging.basicConfig(level=logging.INFO)
-
 
 def main():
     # Load arguments from the TOML file

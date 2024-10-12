@@ -1,3 +1,5 @@
+# src/libs/utils/plot_utils.py
+
 import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
 import os
@@ -9,9 +11,7 @@ from libs.utils.s3_helper import create_s3_filesystem
 def plot_training_validation_loss(training_loss, validation_loss, epochs, path):
     """Plot training and validation loss vs epochs and save the plot to S3."""
     fs = create_s3_filesystem()  # Create the S3 filesystem
-    # save_path_s3 = config['paths']['results_path'] + 'train_val_Loss.png'
     save_path_s3 = os.path.join(path, "train_val_Loss.png")
-
 
     # Plot the training and validation loss
     total_epoch = np.linspace(1, epochs, epochs)
@@ -92,17 +92,17 @@ def plot_confusion_matrix(conf_matrix, title, config):
     except Exception as e:
         logging.error(f"Failed to delete temporary file {temp_file_path}: {e}")
 
-def plot_gasf(data, title):
-    """Plot GASF data."""
-    fig, ax = plt.subplots()
-    cax = ax.imshow(data[0,0,:,:], cmap='rainbow', origin='lower')
-    plt.title(title)
-    fig.colorbar(cax)
-    return fig
+# def plot_gasf(data, title):
+#     """Plot GASF data."""
+#     fig, ax = plt.subplots()
+#     cax = ax.imshow(data[0,0,:,:], cmap='rainbow', origin='lower')
+#     plt.title(title)
+#     fig.colorbar(cax)
+#     return fig
 
-def plot_time_series(data, title):
-    """Plot time-series data."""
-    fig, ax = plt.subplots()
-    ax.plot(data[0])
-    plt.title(title)
-    return fig
+# def plot_time_series(data, title):
+#     """Plot time-series data."""
+#     fig, ax = plt.subplots()
+#     ax.plot(data[0])
+#     plt.title(title)
+#     return fig

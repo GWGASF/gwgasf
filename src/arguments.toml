@@ -1,12 +1,20 @@
-# arguments.toml
+# src/arguments.toml
 
 [paths]
-base_path = "../"
-data_path_inj = "s3://cchou/dataset_inj/"
-data_path_noise = "s3://cchou/dataset_noise/"
-data_path = "s3://cchou/dataset_gasf/"
-models_path = "s3://cchou/models/"
-results_path = "s3://cchou/results/"
+data_path_inj = "s3://dfredin/dataset_inj/"
+data_path_noise = "s3://dfredin/dataset_noise/"
+data_path_gasf = "s3://dfredin/dataset_gasf/"
+models_path = "s3://dfredin/models/"
+results_path = "s3://dfredin/results/"
+
+[options]
+ifos = ["H1", "L1"]
+snr_threshold = 12
+apply_snr_filter = false
+create_new_gasf = true
+num_bbh = 500
+num_bg = 400
+num_glitch = 350
 
 [hyperparameters]
 learning_rate = 0.0005
@@ -19,12 +27,3 @@ seed = 55
 train = 0.8
 test = 0.10
 validation = 0.10
-
-[options]
-snr_threshold = 12
-apply_snr_filter = false
-ifos = ["H1", "L1"]
-create_new_gasf = true
-num_bbh = 50000
-num_bg = 50000
-num_glitch = 50000

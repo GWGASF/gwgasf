@@ -1,4 +1,4 @@
-# libs/architecture/cnn_model.py
+# src/libs/architecture/cnn_model.py
 
 import torch.nn as nn
 

@@ -1,4 +1,5 @@
-import numpy as np
+# src/libs/utils/analysis_utils.py
+
 import torch
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 from libs.utils.s3_helper import create_s3_filesystem
@@ -8,7 +9,7 @@ import os
 import logging
 import tempfile
 
-def save_metrics(conf_matrix, metrics, config, dataset_name):
+def save_metrics(metrics, config, dataset_name):
     """Save precision, recall, F1 score, and support to a CSV file on S3."""
     fs = create_s3_filesystem()  # Create the S3 filesystem
     save_path_s3 = os.path.join(config['paths']['results_path'], f'{dataset_name}_confusion_matrix_metrics.csv')
@@ -63,6 +64,6 @@ def calculate_confusion_matrix(loaded_best_model, dataloader, config, dataset_na
     conf_matrix = confusion_matrix(all_labels, all_preds, labels=range(num_classes), normalize='true')
     metrics = precision_recall_fscore_support(all_labels, all_preds, labels=range(num_classes))
 
-    save_metrics(conf_matrix, metrics, config, dataset_name)
+    save_metrics(metrics, config, dataset_name)
 
     return conf_matrix

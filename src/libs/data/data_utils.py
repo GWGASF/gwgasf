@@ -28,7 +28,7 @@ class ts_data:
         return data
 
 def load_all_data(config):
-    """Load all datasets (BBH, background, glitch) using data_path."""
+    """Load all datasets (BBH, background, glitch) using data path."""
     fs = create_s3_filesystem()
     inj_data_path = config['paths']['data_path_inj']  # Injected dataset path
     noise_data_path = config['paths']['data_path_noise']  # Noise dataset path
@@ -102,17 +102,21 @@ def find_high_snr_glitches(data, glitch_snr, snr_threshold):
     return snr_data
 
 def stack_arrays(data, config):
-    """Stack arrays for the H1 and L1 detectors."""
+    """Stack arrays for the H1 and L1 detectors with varying sample sizes."""
     ifos = config['options']['ifos']
+
+    # Determine the number of samples for each signal type by finding the minimum across detectors
     num_samples = {
-        'bbh': min(min([data['bbh'][ifo].shape[0] for ifo in ifos]), config['options']['num_bbh']),
-        'bg': min(min([data['bg'][ifo].shape[0] for ifo in ifos]), config['options']['num_bg']),
-        'glitch': min(min([data['glitch'][ifo].shape[0] for ifo in ifos]), config['options']['num_glitch'])
+        'bbh': min([data['bbh'][ifo].shape[0] for ifo in ifos]),
+        'bg': min([data['bg'][ifo].shape[0] for ifo in ifos]),
+        'glitch': min([data['glitch'][ifo].shape[0] for ifo in ifos])
     }
 
+    # Stack the samples across detectors for each signal type
     signals = {
-        key: np.dstack([data[key][ifo][:num_samples[key]] for ifo in ifos])
-        for key in num_samples
+        'bbh': np.dstack([data['bbh'][ifo][:num_samples['bbh']] for ifo in ifos]),
+        'bg': np.dstack([data['bg'][ifo][:num_samples['bg']] for ifo in ifos]),
+        'glitch': np.dstack([data['glitch'][ifo][:num_samples['glitch']] for ifo in ifos])
     }
 
     return signals
@@ -140,7 +144,7 @@ def convert_and_label_data(data, config):
 def save_gasf_to_hdf5(data, labels, config):
     """Save GASF data and labels to HDF5 file in S3."""
     fs = create_s3_filesystem()
-    file_path_s3 = config['paths']['data_path'] + 'gasf_data.hdf5'
+    file_path_s3 = config['paths']['data_path_gasf'] + 'gasf_data.hdf5'
 
     # Write to a temporary file locally
     with tempfile.NamedTemporaryFile(delete=False, suffix=".hdf5") as tmp_file:
@@ -168,11 +172,13 @@ def save_gasf_to_hdf5(data, labels, config):
 
 def load_gasf_from_hdf5(config):
     """Load GASF data and labels from HDF5 file in S3."""
-    file_path = config['paths']['data_path'] + 'gasf_data.hdf5'
+    file_path = config['paths']['data_path_gasf'] + 'gasf_data.hdf5'
     fs = create_s3_filesystem()
     
     with fs.open(file_path, 'rb') as f:
         with h5py.File(f, 'r') as hf:
+            #TODO: Add a check to ensure that the number of samples are present in the file
+            #TODO: And that we go with the highest number of samples
             num_bbh = config['options']['num_bbh']
             num_bg = config['options']['num_bg']
             num_glitch = config['options']['num_glitch']
