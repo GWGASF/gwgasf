@@ -25,7 +25,7 @@ def save_metrics(metrics, config, dataset_name):
     # Save the metrics to a temporary CSV file locally
     with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp_file:
         temp_file_path = tmp_file.name
-        logging.info(f"Temporary file created for metrics: {temp_file_path}")
+        logging.info(f"Created temporary file for metrics: {temp_file_path}")
         with open(temp_file_path, 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(header)
@@ -33,16 +33,16 @@ def save_metrics(metrics, config, dataset_name):
 
     # Upload the CSV file to S3
     try:
-        logging.info(f"Uploading CSV to S3 at {save_path_s3}")
+        logging.info(f"Uploading metrics to S3 at {save_path_s3}")
         fs.put(temp_file_path, save_path_s3)  # Upload to S3
-        logging.info(f"Successfully uploaded CSV to {save_path_s3}")
+        logging.info(f"Successfully uploaded metrics to {save_path_s3}")
     except Exception as e:
-        logging.error(f"Failed to upload CSV to S3: {e}")
+        logging.error(f"Failed to upload metrics to S3: {e}")
 
     # Clean up the local temporary file
     try:
         os.remove(temp_file_path)
-        logging.info(f"Temporary file {temp_file_path} deleted.")
+        logging.info(f"Deleted temporary file for metrics {temp_file_path}")
     except Exception as e:
         logging.error(f"Failed to delete temporary file {temp_file_path}: {e}")
 

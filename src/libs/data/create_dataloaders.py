@@ -21,13 +21,14 @@ def create_dataloaders(strains, targets, config):
     """Create DataLoader objects for training, testing, and validation sets."""
     batch_size = config['hyperparameters']['batch_size']
     seed = config['hyperparameters']['seed']
+    shuffle_select = config['options']['shuffle_data']
 
 
     set_seed(seed)
     training_data = DataLoader(
         MyDataset(strains['training'], targets['training']), 
         batch_size=batch_size, 
-        shuffle=True
+        shuffle=shuffle_select
     )
 
     validation_data = DataLoader(

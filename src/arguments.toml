@@ -8,17 +8,19 @@ models_path = "s3://dfredin/models/"
 results_path = "s3://dfredin/results/"
 
 [options]
-ifos = ["H1", "L1"]
-snr_threshold = 12
+create_new_gasf = false
 apply_snr_filter = false
-create_new_gasf = true
+snr_threshold = 12
+shuffle_data = true
+
+select_samples = false
 num_bbh = 500
-num_bg = 400
-num_glitch = 350
+num_bg = 500
+num_glitch = 500
 
 [hyperparameters]
 learning_rate = 0.0005
-epochs = 20
+epochs = 5
 L2_reg = 0.001
 batch_size = 32
 seed = 55

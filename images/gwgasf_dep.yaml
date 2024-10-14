@@ -40,7 +40,7 @@ spec:
              ephemeral-storage: 250Gi
              nvidia.com/gpu: 1  
            requests:
-             memory: 175i
+             memory: 175Gi
              cpu: 20000m
              ephemeral-storage: 60Gi 
              nvidia.com/gpu: 1

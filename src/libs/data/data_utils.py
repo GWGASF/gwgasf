@@ -32,20 +32,13 @@ def load_all_data(config):
     fs = create_s3_filesystem()
     inj_data_path = config['paths']['data_path_inj']  # Injected dataset path
     noise_data_path = config['paths']['data_path_noise']  # Noise dataset path
-        
-    ifos = config['options']['ifos']
     apply_snr_filter = config['options']['apply_snr_filter']
     snr_threshold = config['options']['snr_threshold']
+    ifos = ["H1", "L1"]
     
     # Load files from S3 paths
     inj_file_paths = get_file_paths(inj_data_path, fs)
     noise_file_paths = get_file_paths(noise_data_path, fs)
-    def load_files(files, key):
-        data_list = []
-        for file in files:
-            with fs.open(file, 'rb') as f:
-                data_list.append(ts_data(f).get_data(key))
-        return np.concatenate(data_list)
 
     # Load datasets
     bbhs = {ifo: load_files(inj_file_paths['bbh'], ifo) for ifo in ifos}
@@ -75,11 +68,6 @@ def get_file_paths(data_path, fs):
 
     paths = {}
 
-    # Function to extract the numerical part from the filename
-    def extract_number_from_path(path):
-        match = re.search(r'p(\d+)', path)  # Look for the number after 'p' in the filename
-        return int(match.group(1)) if match else float('inf')  # Use infinity if no match is found
-
     for pattern in file_patterns:
         matched_files = fs.glob(os.path.join(data_path, pattern))
         if matched_files:
@@ -101,9 +89,22 @@ def find_high_snr_glitches(data, glitch_snr, snr_threshold):
         snr_data[ifo] = data['glitch'][ifo][indices]
     return snr_data
 
-def stack_arrays(data, config):
+def load_files(files, key):
+    fs = create_s3_filesystem()
+    data_list = []
+    for file in files:
+        with fs.open(file, 'rb') as f:
+            data_list.append(ts_data(f).get_data(key))
+    return np.concatenate(data_list)
+
+# Function to extract the numerical part from the filename
+def extract_number_from_path(path):
+    match = re.search(r'p(\d+)', path)  # Look for the number after 'p' in the filename
+    return int(match.group(1)) if match else float('inf')  # Use infinity if no match is found
+
+def stack_arrays(data):
     """Stack arrays for the H1 and L1 detectors with varying sample sizes."""
-    ifos = config['options']['ifos']
+    ifos = ["H1", "L1"]
 
     # Determine the number of samples for each signal type by finding the minimum across detectors
     num_samples = {
@@ -121,9 +122,9 @@ def stack_arrays(data, config):
 
     return signals
 
-def convert_and_label_data(data, config):
+def convert_and_label_data(data):
     """Label the data and convert it to GASF format."""
-    ifos = config['options']['ifos']
+    ifos = ["H1", "L1"]
     anomaly_class = {'glitch': [1, 0, 0], 'bbh': [0, 1, 0], 'bg': [0, 0, 1]}
     GASF = GramianAngularField(image_size=194, sample_range=(-1, 1), method="summation")
 
@@ -149,7 +150,7 @@ def save_gasf_to_hdf5(data, labels, config):
     # Write to a temporary file locally
     with tempfile.NamedTemporaryFile(delete=False, suffix=".hdf5") as tmp_file:
         temp_file_path = tmp_file.name
-        logging.info(f"Temporary file created: {temp_file_path}")
+        logging.info(f"Created temporary file for GASF data: {temp_file_path}")
         with h5py.File(temp_file_path, 'w') as hf:
             for key in data:
                 hf.create_dataset(key, data=data[key])
@@ -157,16 +158,16 @@ def save_gasf_to_hdf5(data, labels, config):
 
     # Attempt to upload the temporary file to S3 using fs.put
     try:
-        logging.info(f"Uploading {temp_file_path} to S3 at {file_path_s3}")
+        logging.info(f"Uploading GASF data to S3 at {file_path_s3}")
         fs.put(temp_file_path, file_path_s3)  # Use fs.put for direct file copy to S3
-        logging.info(f"Successfully uploaded {temp_file_path} to {file_path_s3}")
+        logging.info(f"Successfully uploaded GASF data to {file_path_s3}")
     except Exception as e:
-        logging.error(f"Failed to upload {temp_file_path} to S3: {e}")
+        logging.error(f"Failed to upload GASF data to S3: {e}")
 
     # Clean up the local temporary file
     try:
         os.remove(temp_file_path)
-        logging.info(f"Temporary file {temp_file_path} deleted.")
+        logging.info(f"Deleted temporary file for GASF data: {temp_file_path}")
     except Exception as e:
         logging.error(f"Failed to delete temporary file {temp_file_path}: {e}")
 
@@ -177,38 +178,64 @@ def load_gasf_from_hdf5(config):
     
     with fs.open(file_path, 'rb') as f:
         with h5py.File(f, 'r') as hf:
-            #TODO: Add a check to ensure that the number of samples are present in the file
-            #TODO: And that we go with the highest number of samples
-            num_bbh = config['options']['num_bbh']
-            num_bg = config['options']['num_bg']
-            num_glitch = config['options']['num_glitch']
             
-            data = {
-                'bbh': np.array(hf['bbh'][:num_bbh]),
-                'bg': np.array(hf['bg'][:num_bg]),
-                'glitch': np.array(hf['glitch'][:num_glitch])
-            }
-            labels = {
-                'bbh': np.array(hf['bbh_label'][:num_bbh]),
-                'bg': np.array(hf['bg_label'][:num_bg]),
-                'glitch': np.array(hf['glitch_label'][:num_glitch])
-            }
-    
+            # Check if the user wants to select a set number of samples
+            if config['options']['select_samples']:
+                num_bbh = config['options']['num_bbh']
+                num_bg = config['options']['num_bg']
+                num_glitch = config['options']['num_glitch']
+
+                data = {
+                    'bbh': np.array(hf['bbh'][:num_bbh]),
+                    'bg': np.array(hf['bg'][:num_bg]),
+                    'glitch': np.array(hf['glitch'][:num_glitch])
+                }
+                labels = {
+                    'bbh': np.array(hf['bbh_label'][:num_bbh]),
+                    'bg': np.array(hf['bg_label'][:num_bg]),
+                    'glitch': np.array(hf['glitch_label'][:num_glitch])
+                }
+
+            else:  # Load all samples if select_samples is false
+                data = {
+                    'bbh': np.array(hf['bbh'][:]),
+                    'bg': np.array(hf['bg'][:]),
+                    'glitch': np.array(hf['glitch'][:])
+                }
+                labels = {
+                    'bbh': np.array(hf['bbh_label'][:]),
+                    'bg': np.array(hf['bg_label'][:]),
+                    'glitch': np.array(hf['glitch_label'][:])
+                }
+
     return data, labels
 
 def split_dataset(data, labels, config):
-    """Split data into training, testing, and validation sets using ratios from config."""
+    """Split data into training, testing, and validation sets using ratios from config, with optional shuffling."""
+
+    # Set the seed for reproducibility
+    seed = config['hyperparameters']['seed']
+    set_seed(seed)
+
     def split(data, train_ratio, test_ratio, val_ratio):
         total_samples = len(data)
-        num_train = int(train_ratio * total_samples)
-        num_test = int(test_ratio * total_samples)
-        num_val = total_samples - num_train - num_test
+        num_train = round(train_ratio * total_samples)
+        num_test = round(test_ratio * total_samples)
+        num_val = total_samples - num_train - num_test  # Adjust to ensure the total adds up
 
         return data[:num_train], data[num_train:num_train + num_test], data[num_train + num_test:]
 
     train_ratio = config['ratios']['train']
     test_ratio = config['ratios']['test']
     val_ratio = config['ratios']['validation']
+
+    # Check whether to shuffle the data based on config
+    if config['options']['shuffle_data']:
+        for key in data:
+            indices = np.arange(len(data[key]))
+            np.random.shuffle(indices)
+            data[key] = np.array(data[key])[indices]
+            labels[key] = np.array(labels[key])[indices]
 
     # Split each type of data
     split_data = {key: split(data[key], train_ratio, test_ratio, val_ratio) for key in data}
@@ -229,8 +256,8 @@ def split_dataset(data, labels, config):
 
     return strains, targets
 
-
 def set_seed(seed):
+    """Set the seed for reproducibility across random, numpy, and torch."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)

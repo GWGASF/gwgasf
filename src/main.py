@@ -22,32 +22,29 @@ def main():
     # Data Preparation
     if config['options']['create_new_gasf']:
         data = load_all_data(config)
-        data = stack_arrays(data, config)
-        gasf_data, labels = convert_and_label_data(data, config)
+        data = stack_arrays(data)
+        gasf_data, labels = convert_and_label_data(data)
         save_gasf_to_hdf5(gasf_data, labels, config)
     else:
         gasf_data, labels = load_gasf_from_hdf5(config)
+        strains, targets = split_dataset(gasf_data, labels, config)
+        training_data, validation_data, testing_data = create_dataloaders(strains, targets, config)
+        
+        # Model Training
+        train_model(config, device, training_data, validation_data)
 
-    strains, targets = split_dataset(gasf_data, labels, config)
-    
-    training_data, validation_data, testing_data = create_dataloaders(strains, targets, config)
+        # Evaluation and Analysis
+        # Plot confusion matrices for training, validation, and testing datasets
+        for dataset, name in zip([training_data, validation_data, testing_data], ['Training', 'Validation', 'Test']):
+            conf_matrix = calculate_confusion_matrix(load_best_model(config, device), dataset, config, name)
+            plot_confusion_matrix(conf_matrix, name, config)
 
-    # Model Training
-    train_model(config, device, training_data, validation_data)
-
-    # Evaluation and Analysis
-   
-    # Plot confusion matrices for training, validation, and testing datasets
-    for dataset, name in zip([training_data, validation_data, testing_data], ['Training', 'Validation', 'Test']):
-        conf_matrix = calculate_confusion_matrix(load_best_model(config, device), dataset, config, name)
-        plot_confusion_matrix(conf_matrix, name, config)
-
-    # Visualization
-    # fig = plot_gasf(gasf_data['bbh'], "GASF Data")  # Example for bbh
-    # save_plot(fig, config['paths']['results_path'] + 'gasf_plot.png')
-    
-    # fig = plot_time_series(data['bbh'], "Time Series Data")  # Example for bbh
-    # save_plot(fig, config['paths']['results_path'] + 'time_series_plot.png')
+        # Visualization
+        # fig = plot_gasf(gasf_data['bbh'], "GASF Data")  # Example for bbh
+        # save_plot(fig, config['paths']['results_path'] + 'gasf_plot.png')
+        
+        # fig = plot_time_series(data['bbh'], "Time Series Data")  # Example for bbh
+        # save_plot(fig, config['paths']['results_path'] + 'time_series_plot.png')
 
 if __name__ == "__main__":
     main()

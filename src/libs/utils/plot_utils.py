@@ -25,7 +25,7 @@ def plot_training_validation_loss(training_loss, validation_loss, epochs, path):
     # Save the plot to a temporary local file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
         temp_file_path = tmp_file.name
-        logging.info(f"Temporary file created for loss plot: {temp_file_path}")
+        logging.info(f"Created temporary file for loss plot: {temp_file_path}")
         plt.savefig(temp_file_path, bbox_inches='tight')
         plt.close()
 
@@ -40,7 +40,7 @@ def plot_training_validation_loss(training_loss, validation_loss, epochs, path):
     # Clean up the local temporary file
     try:
         os.remove(temp_file_path)
-        logging.info(f"Temporary file {temp_file_path} deleted.")
+        logging.info(f"Deleted temporary file for loss plot: {temp_file_path}")
     except Exception as e:
         logging.error(f"Failed to delete temporary file {temp_file_path}: {e}")
 
@@ -73,7 +73,7 @@ def plot_confusion_matrix(conf_matrix, title, config):
     # Save the plot to a temporary local file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
         temp_file_path = tmp_file.name
-        logging.info(f"Temporary file created for plot: {temp_file_path}")
+        logging.info(f"Created temporary file for plot: {temp_file_path}")
         plt.savefig(temp_file_path, bbox_inches='tight')
         plt.close()
 
@@ -88,7 +88,7 @@ def plot_confusion_matrix(conf_matrix, title, config):
     # Clean up the local temporary file
     try:
         os.remove(temp_file_path)
-        logging.info(f"Temporary file {temp_file_path} deleted.")
+        logging.info(f"Deleted temporary file for plot: {temp_file_path}")
     except Exception as e:
         logging.error(f"Failed to delete temporary file {temp_file_path}: {e}")
 
