@@ -1,0 +1,87 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: gwgasf-job-training
+spec:
+  completions: 1
+  backoffLimit: 4 
+  template:
+    metadata:
+      labels:
+        k8s-app: gwgasf-training
+    spec:
+      containers:
+      - name: gwgasf-trainpod
+        image: gitlab-registry.nrp-nautilus.io/gwgasf/gwgasf:testing
+        env:
+        - name: DATA_PATH_INJ
+          value: "s3://dfredin/dataset_inj/"
+        - name: DATA_PATH_NOISE
+          value: "s3://dfredin/dataset_noise/"
+        - name: DATA_PATH_GASF
+          value: "s3://dfredin/dataset_gasf/"
+        - name: MODELS_PATH
+          value: "s3://dfredin/models/"
+        - name: RESULTS_PATH
+          value: "s3://dfredin/results/"
+        - name: CREATE_NEW_GASF
+          value: "false"
+        - name: APPLY_SNR_FILTER
+          value: "false"
+        - name: SNR_THRESHOLD
+          value: "12"
+        - name: SHUFFLE_DATA
+          value: "true"
+        - name: SELECT_SAMPLES
+          value: "true"
+        - name: TRAIN_MODEL
+          value: "true"
+        - name: NUM_BBH
+          value: "25000"
+        - name: NUM_BG
+          value: "25000"
+        - name: NUM_GLITCH
+          value: "25000"
+        - name: LEARNING_RATE
+          value: "0.0005"
+        - name: EPOCHS
+          value: "15"
+        - name: L2_REG
+          value: "0.001"
+        - name: BATCH_SIZE
+          value: "32"
+        - name: SEED
+          value: "55"
+        - name: TRAIN_RATIO
+          value: "0.8"
+        - name: TEST_RATIO
+          value: "0.10"
+        - name: VALIDATION_RATIO
+          value: "0.10"
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: s3-credentials
+              key: access_key
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: s3-credentials
+              key: secret_key
+        - name: AWS_S3_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: s3-credentials
+              key: host_base
+        resources:
+           limits:
+             memory: 500Gi
+             cpu: 30000m
+             ephemeral-storage: 250Gi
+             nvidia.com/gpu: 1  
+           requests:
+             memory: 350Gi
+             cpu: 15000m
+             ephemeral-storage: 60Gi 
+             nvidia.com/gpu: 1
+      restartPolicy: Never

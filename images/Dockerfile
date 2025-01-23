@@ -23,18 +23,23 @@ RUN pip install pyts==0.13.0 \
 # Set the working directory
 WORKDIR /app/gwgasf
 
-# Add the GitLab SSH host key to known_hosts to bypass host key verification prompt
-RUN mkdir -p ~/.ssh \
-    && ssh-keyscan -p 30622 gitlab-ssh.nrp-nautilus.io >> ~/.ssh/known_hosts
+# # UNCOMMENT FOR REMOTE REPO
+# # Add the GitLab SSH host key to known_hosts to bypass host key verification prompt
+# RUN mkdir -p ~/.ssh \
+#     && ssh-keyscan -p 30622 gitlab-ssh.nrp-nautilus.io >> ~/.ssh/known_hosts
 
-# Clone the GitLab repository into the current working directory using SSH
-# This allows users to clone the repo using their own SSH key
-RUN --mount=type=ssh git clone ssh://git@gitlab-ssh.nrp-nautilus.io:30622/gwgasf/gwgasf.git .
+# # Clone the GitLab repository into the current working directory using SSH
+# # This allows users to clone the repo using their own SSH key
+# RUN --mount=type=ssh git clone ssh://git@gitlab-ssh.nrp-nautilus.io:30622/gwgasf/gwgasf.git .
+
+# CLONE LOCAL REPO
+# Bypass repo clone
+COPY . /app/gwgasf
 
 # Cleanup to reduce image size (remove git after cloning)
 RUN apt-get remove -y git \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
-# # Command to run the script when the container starts
-# CMD ["python3", "src/main.py"]
+# Command to run the script when the container starts
+CMD ["src/entrypoint.sh"]

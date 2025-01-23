@@ -13,7 +13,8 @@ apply_snr_filter = false
 snr_threshold = 12
 shuffle_data = true
 
-select_samples = false
+select_samples = true
+train_model = false
 num_bbh = 500
 num_bg = 500
 num_glitch = 500

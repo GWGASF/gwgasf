@@ -29,6 +29,7 @@ class ts_data:
 
 def load_all_data(config):
     """Load all datasets (BBH, background, glitch) using data path."""
+    logging.info("Loading raw data...")
     fs = create_s3_filesystem()
     inj_data_path = config['paths']['data_path_inj']  # Injected dataset path
     noise_data_path = config['paths']['data_path_noise']  # Noise dataset path
@@ -104,6 +105,7 @@ def extract_number_from_path(path):
 
 def stack_arrays(data):
     """Stack arrays for the H1 and L1 detectors with varying sample sizes."""
+    logging.info("Stacking arrays...")
     ifos = ["H1", "L1"]
 
     # Determine the number of samples for each signal type by finding the minimum across detectors
@@ -124,6 +126,7 @@ def stack_arrays(data):
 
 def convert_and_label_data(data):
     """Label the data and convert it to GASF format."""
+    logging.info("Converting to GASF...")
     ifos = ["H1", "L1"]
     anomaly_class = {'glitch': [1, 0, 0], 'bbh': [0, 1, 0], 'bg': [0, 0, 1]}
     GASF = GramianAngularField(image_size=194, sample_range=(-1, 1), method="summation")
@@ -173,6 +176,7 @@ def save_gasf_to_hdf5(data, labels, config):
 
 def load_gasf_from_hdf5(config):
     """Load GASF data and labels from HDF5 file in S3."""
+    logging.info("Loading GASF data...")
     file_path = config['paths']['data_path_gasf'] + 'gasf_data.hdf5'
     fs = create_s3_filesystem()
     
@@ -212,7 +216,7 @@ def load_gasf_from_hdf5(config):
 
 def split_dataset(data, labels, config):
     """Split data into training, testing, and validation sets using ratios from config, with optional shuffling."""
-
+    logging.info("Splitting dataset...")
     # Set the seed for reproducibility
     seed = config['hyperparameters']['seed']
     set_seed(seed)
