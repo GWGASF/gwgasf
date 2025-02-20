@@ -16,12 +16,10 @@ spec:
     spec:
       containers:
       - name: gwgasf-testingpod
-        image: gitlab-registry.nrp-nautilus.io/gwgasf/gwgasf:testing
+        image: dfredin/gwgasf:gasfconversion
         env:
-        - name: DATA_PATH_INJ
-          value: "s3://dfredin/dataset_inj/"
-        - name: DATA_PATH_NOISE
-          value: "s3://dfredin/dataset_noise/"
+        - name: DATA_PATH
+          value: "s3://dfredin/testing/"
         - name: DATA_PATH_GASF
           value: "s3://dfredin/dataset_gasf/"
         - name: MODELS_PATH
@@ -29,7 +27,7 @@ spec:
         - name: RESULTS_PATH
           value: "s3://dfredin/results/"
         - name: CREATE_NEW_GASF
-          value: "false"
+          value: "true"
         - name: APPLY_SNR_FILTER
           value: "false"
         - name: SNR_THRESHOLD
@@ -41,11 +39,11 @@ spec:
         - name: TRAIN_MODEL
           value: "false"
         - name: NUM_BBH
-          value: "2500"
+          value: "1000"
         - name: NUM_BG
-          value: "2500"
+          value: "1000"
         - name: NUM_GLITCH
-          value: "2500"
+          value: "1000"
         - name: LEARNING_RATE
           value: "0.0005"
         - name: EPOCHS

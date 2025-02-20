@@ -31,28 +31,34 @@ def load_all_data(config):
     """Load all datasets (BBH, background, glitch) using data path."""
     logging.info("Loading raw data...")
     fs = create_s3_filesystem()
-    inj_data_path = config['paths']['data_path_inj']  # Injected dataset path
-    noise_data_path = config['paths']['data_path_noise']  # Noise dataset path
+    data_path = config['paths']['data_path']  # Injected dataset path
+    # noise_data_path = config['paths']['data_path_noise']  # Noise dataset path
     apply_snr_filter = config['options']['apply_snr_filter']
     snr_threshold = config['options']['snr_threshold']
     ifos = ["H1", "L1"]
     
     # Load files from S3 paths
-    inj_file_paths = get_file_paths(inj_data_path, fs)
-    noise_file_paths = get_file_paths(noise_data_path, fs)
+    # inj_file_paths = get_file_paths(inj_data_path, fs)
+    # noise_file_paths = get_file_paths(noise_data_path, fs)
+    file_paths = get_file_paths(data_path, fs)
 
-    # Load datasets
-    bbhs = {ifo: load_files(inj_file_paths['bbh'], ifo) for ifo in ifos}
-    bgs = {ifo: load_files(noise_file_paths[f'{ifo}_bg'], 'background_noise') for ifo in ifos}
-    glitches = {ifo: load_files(noise_file_paths[f'{ifo}_glitch'], 'glitch') for ifo in ifos}
+    # # Load datasets
+    # bbhs = {ifo: load_files(inj_file_paths['bbh'], ifo) for ifo in ifos}
+    # bgs = {ifo: load_files(noise_file_paths[f'{ifo}_bg'], 'background_noise') for ifo in ifos}
+    # glitches = {ifo: load_files(noise_file_paths[f'{ifo}_glitch'], 'glitch') for ifo in ifos}
+
+   # Load datasets
+    bbhs = {ifo: load_files(file_paths['bbh'], ifo) for ifo in ifos} if 'bbh' in file_paths else None
+    bgs = {ifo: load_files(file_paths['bg'], ifo) for ifo in ifos} if 'bg' in file_paths else None
+    glitches = {ifo: load_files(file_paths['glitch'], ifo) for ifo in ifos} if 'glitch' in file_paths else None
 
     data = {'bbh': bbhs, 'bg': bgs, 'glitch': glitches}
 
-    if apply_snr_filter:
-        glitch_info = {ifo: load_files(noise_file_paths[f'{ifo}_glitch'], 'glitch_info') for ifo in ifos}
+    if apply_snr_filter and 'glitch' in file_paths:
+        glitch_info = {ifo: load_files(file_paths['glitch'], f'{ifo}_glitch_info') for ifo in ifos}
         glitch_snr = {ifo: glitch_info[ifo]['snr'] for ifo in ifos}
         snr_glitches = find_high_snr_glitches(data, glitch_snr, snr_threshold)
-        data = {'bbh': bbhs, 'bg': bgs, 'glitch': snr_glitches}
+        data['glitch'] = snr_glitches  # Replace glitches with high-SNR ones
 
     return data
 
@@ -64,22 +70,35 @@ def get_file_paths(data_path, fs):
         'H1_bg_dataset_p*.hdf5',
         'L1_bg_dataset_p*.hdf5',
         'H1_glitch_dataset_p*.hdf5',
-        'L1_glitch_dataset_p*.hdf5'
+        'L1_glitch_dataset_p*.hdf5',
+        'bg_data_ids_*-*.hdf5', 
+        'glitch_data_ids_*-*.hdf5',  
+        'injection_data_type_bbh_ids_*-*.hdf5'
     ]
-
+## NOTE: ADD FILE PATHS OF NEW DATA
     paths = {}
 
     for pattern in file_patterns:
         matched_files = fs.glob(os.path.join(data_path, pattern))
         if matched_files:
-            # Sort the matched files based on the extracted number
-            matched_files.sort(key=extract_number_from_path)
-            
+            matched_files.sort(key=extract_start_id)  # Sort using START_ID
+
+            # Assign category keys for old and new formats
             if pattern.startswith('bbh'):
-                key = pattern.split('_')[0]
-            else:
-                key = '_'.join(pattern.split('_')[:2])
+                key = 'bbh'
+            elif pattern.startswith('H1_bg') or pattern.startswith('L1_bg'):
+                key = pattern.split('_')[0] + '_bg'
+            elif pattern.startswith('H1_glitch') or pattern.startswith('L1_glitch'):
+                key = pattern.split('_')[0] + '_glitch'
+            elif pattern.startswith('bg_data_ids'):
+                key = 'bg'
+            elif pattern.startswith('glitch_data_ids'):
+                key = 'glitch'
+            elif pattern.startswith('injection_data_type_bbh'):
+                key = 'bbh'  # Extract BBH injection files
+
             paths[key] = matched_files
+
     return paths
 
 def find_high_snr_glitches(data, glitch_snr, snr_threshold):
@@ -90,18 +109,37 @@ def find_high_snr_glitches(data, glitch_snr, snr_threshold):
         snr_data[ifo] = data['glitch'][ifo][indices]
     return snr_data
 
-def load_files(files, key):
+def load_files(files, ifo):
+    """Load HDF5 files from S3 and extract data for a given interferometer (H1 or L1)."""
     fs = create_s3_filesystem()
     data_list = []
+
     for file in files:
         with fs.open(file, 'rb') as f:
-            data_list.append(ts_data(f).get_data(key))
-    return np.concatenate(data_list)
+            data = ts_data(f).get_data(ifo)  # Load data for the specific IFO
+            if data is not None:
+                data_list.append(data)
 
-# Function to extract the numerical part from the filename
-def extract_number_from_path(path):
-    match = re.search(r'p(\d+)', path)  # Look for the number after 'p' in the filename
-    return int(match.group(1)) if match else float('inf')  # Use infinity if no match is found
+    return np.concatenate(data_list) if data_list else None
+
+
+# def load_files(files, key):
+#     fs = create_s3_filesystem()
+#     data_list = []
+#     for file in files:
+#         with fs.open(file, 'rb') as f:
+#             data_list.append(ts_data(f).get_data(key))
+#     return np.concatenate(data_list)
+
+def extract_start_id(path):
+    """Extract START_ID from filename for sorting."""
+    match = re.search(r'ids_(\d+)-\d+', path)
+    return int(match.group(1)) if match else float('inf')
+
+# # Function to extract the numerical part from the filename
+# def extract_number_from_path(path):
+#     match = re.search(r'p(\d+)', path)  # Look for the number after 'p' in the filename
+#     return int(match.group(1)) if match else float('inf')  # Use infinity if no match is found
 
 def stack_arrays(data):
     """Stack arrays for the H1 and L1 detectors with varying sample sizes."""

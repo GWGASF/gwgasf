@@ -1,29 +1,28 @@
 # src/arguments.toml
 
 [paths]
-data_path_inj = "s3://dfredin/dataset_inj/"
-data_path_noise = "s3://dfredin/dataset_noise/"
+data_path = "s3://dfredin/testing/"
 data_path_gasf = "s3://dfredin/dataset_gasf/"
 models_path = "s3://dfredin/models/"
 results_path = "s3://dfredin/results/"
 
 [options]
-create_new_gasf = false
+create_new_gasf = true
 apply_snr_filter = false
 snr_threshold = 12
 shuffle_data = true
 
 select_samples = true
 train_model = false
-num_bbh = 500
-num_bg = 500
-num_glitch = 500
+num_bbh = 2000
+num_bg = 2000
+num_glitch = 2000
 
 [hyperparameters]
 learning_rate = 0.0005
 epochs = 5
 L2_reg = 0.001
-batch_size = 32
+batch_size = 1
 seed = 55
 
 [ratios]
