@@ -1,0 +1,11 @@
+pyts==0.13.0
+numpy==1.24.1
+matplotlib==3.7.1
+h5py==3.7.0
+tqdm==4.65.0
+toml==0.10.2
+s3cmd==2.2.0
+s3fs
+torch==2.1.2
+torchsummary==1.5.1
+pyyaml

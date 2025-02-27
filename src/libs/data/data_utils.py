@@ -30,32 +30,23 @@ class ts_data:
 def load_all_data(config):
     """Load all datasets (BBH, background, glitch) using data path."""
     logging.info("Loading raw data...")
-    fs = create_s3_filesystem()
-    data_path = config['paths']['data_path']  # Injected dataset path
-    # noise_data_path = config['paths']['data_path_noise']  # Noise dataset path
+    fs = create_s3_filesystem(config)
+    data_path = config['paths']['data_path']  # raw dataset path
     apply_snr_filter = config['options']['apply_snr_filter']
     snr_threshold = config['options']['snr_threshold']
     ifos = ["H1", "L1"]
-    
-    # Load files from S3 paths
-    # inj_file_paths = get_file_paths(inj_data_path, fs)
-    # noise_file_paths = get_file_paths(noise_data_path, fs)
+
     file_paths = get_file_paths(data_path, fs)
 
-    # # Load datasets
-    # bbhs = {ifo: load_files(inj_file_paths['bbh'], ifo) for ifo in ifos}
-    # bgs = {ifo: load_files(noise_file_paths[f'{ifo}_bg'], 'background_noise') for ifo in ifos}
-    # glitches = {ifo: load_files(noise_file_paths[f'{ifo}_glitch'], 'glitch') for ifo in ifos}
-
    # Load datasets
-    bbhs = {ifo: load_files(file_paths['bbh'], ifo) for ifo in ifos} if 'bbh' in file_paths else None
-    bgs = {ifo: load_files(file_paths['bg'], ifo) for ifo in ifos} if 'bg' in file_paths else None
-    glitches = {ifo: load_files(file_paths['glitch'], ifo) for ifo in ifos} if 'glitch' in file_paths else None
+    bbhs = {ifo: load_files(file_paths['bbh'], ifo, config) for ifo in ifos} if 'bbh' in file_paths else None
+    bgs = {ifo: load_files(file_paths['bg'], ifo, config) for ifo in ifos} if 'bg' in file_paths else None
+    glitches = {ifo: load_files(file_paths['glitch'], ifo, config) for ifo in ifos} if 'glitch' in file_paths else None
 
     data = {'bbh': bbhs, 'bg': bgs, 'glitch': glitches}
 
     if apply_snr_filter and 'glitch' in file_paths:
-        glitch_info = {ifo: load_files(file_paths['glitch'], f'{ifo}_glitch_info') for ifo in ifos}
+        glitch_info = {ifo: load_files(file_paths['glitch'], f'{ifo}_glitch_info', config) for ifo in ifos}
         glitch_snr = {ifo: glitch_info[ifo]['snr'] for ifo in ifos}
         snr_glitches = find_high_snr_glitches(data, glitch_snr, snr_threshold)
         data['glitch'] = snr_glitches  # Replace glitches with high-SNR ones
@@ -109,9 +100,9 @@ def find_high_snr_glitches(data, glitch_snr, snr_threshold):
         snr_data[ifo] = data['glitch'][ifo][indices]
     return snr_data
 
-def load_files(files, ifo):
+def load_files(files, ifo, config):
     """Load HDF5 files from S3 and extract data for a given interferometer (H1 or L1)."""
-    fs = create_s3_filesystem()
+    fs = create_s3_filesystem(config)
     data_list = []
 
     for file in files:
@@ -121,15 +112,6 @@ def load_files(files, ifo):
                 data_list.append(data)
 
     return np.concatenate(data_list) if data_list else None
-
-
-# def load_files(files, key):
-#     fs = create_s3_filesystem()
-#     data_list = []
-#     for file in files:
-#         with fs.open(file, 'rb') as f:
-#             data_list.append(ts_data(f).get_data(key))
-#     return np.concatenate(data_list)
 
 def extract_start_id(path):
     """Extract START_ID from filename for sorting."""
@@ -185,7 +167,7 @@ def convert_and_label_data(data):
 
 def save_gasf_to_hdf5(data, labels, config):
     """Save GASF data and labels to HDF5 file in S3."""
-    fs = create_s3_filesystem()
+    fs = create_s3_filesystem(config)
     file_path_s3 = config['paths']['data_path_gasf'] + 'gasf_data.hdf5'
 
     # Write to a temporary file locally
@@ -200,7 +182,7 @@ def save_gasf_to_hdf5(data, labels, config):
     # Attempt to upload the temporary file to S3 using fs.put
     try:
         logging.info(f"Uploading GASF data to S3 at {file_path_s3}")
-        fs.put(temp_file_path, file_path_s3)  # Use fs.put for direct file copy to S3
+        fs.put_file(temp_file_path, file_path_s3)  # Use fs.put for direct file copy to S3
         logging.info(f"Successfully uploaded GASF data to {file_path_s3}")
     except Exception as e:
         logging.error(f"Failed to upload GASF data to S3: {e}")
@@ -216,7 +198,7 @@ def load_gasf_from_hdf5(config):
     """Load GASF data and labels from HDF5 file in S3."""
     logging.info("Loading GASF data...")
     file_path = config['paths']['data_path_gasf'] + 'gasf_data.hdf5'
-    fs = create_s3_filesystem()
+    fs = create_s3_filesystem(config)
     
     with fs.open(file_path, 'rb') as f:
         with h5py.File(f, 'r') as hf:

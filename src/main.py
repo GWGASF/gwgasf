@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
     # Load arguments from the TOML file
-    config = parse_arguments('src/arguments.toml')
+    config = parse_arguments('src/arguments.yaml')
 
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
