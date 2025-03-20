@@ -8,9 +8,11 @@ import logging
 import tempfile
 from libs.utils.s3_helper import create_s3_filesystem
 
-def plot_training_validation_loss(training_loss, validation_loss, epochs, path, config):
+def plot_training_validation_loss(training_loss, validation_loss, config):
     """Plot training and validation loss vs epochs and save the plot to S3."""
     fs = create_s3_filesystem(config)  # Create the S3 filesystem
+    epochs = config['hyperparameters']['epochs']
+    path = config['paths']['results_path']
     save_path_s3 = os.path.join(path, "train_val_Loss.png")
 
     # Plot the training and validation loss

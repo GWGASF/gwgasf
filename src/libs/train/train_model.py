@@ -59,7 +59,7 @@ def train_model(config, device, training_data, validation_data):
         # Save the best model
         if avg_validation_loss < best_val_loss:
             best_val_loss = avg_validation_loss
-            save_best_model(model, config['paths']['models_path'])
+            save_best_model(model, config)
 
     # Plot training and validation loss
-    plot_training_validation_loss(training_loss_values, validation_loss_values, config['hyperparameters']['epochs'], config['paths']['results_path'])
+    plot_training_validation_loss(training_loss_values, validation_loss_values, config)

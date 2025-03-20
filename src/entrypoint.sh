@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Path to the TOML file
-TOML_FILE="src/arguments.toml"
+# TOML_FILE="src/arguments.toml"
+TOML_FILE="src/arguments.yaml"
+
 
 # Update paths section
 if [ -n "$DATA_PATH_INJ" ]; then

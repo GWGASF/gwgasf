@@ -2,6 +2,7 @@
 
 import torch
 import logging
+import argparse
 from libs.utils.argument_parser import parse_arguments
 from libs.data.data_utils import load_all_data, stack_arrays, convert_and_label_data, save_gasf_to_hdf5, load_gasf_from_hdf5, split_dataset
 from libs.data.create_dataloaders import create_dataloaders
@@ -12,10 +13,7 @@ from libs.utils.plot_utils import plot_confusion_matrix
 
 logging.basicConfig(level=logging.INFO)
 
-def main():
-    # Load arguments from the TOML file
-    config = parse_arguments('src/arguments.yaml')
-
+def main(config):
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -51,4 +49,31 @@ def main():
             # save_plot(fig, config['paths']['results_path'] + 'time_series_plot.png')
 
 if __name__ == "__main__":
-    main()
+    # Load arguments from the TOML file
+    config = parse_arguments('src/arguments.yaml')
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--newgasf', action='store_true', default = config['options']['create_new_gasf'])
+    parser.add_argument('--train', action='store_true', default = config['options']['train_model'])
+
+    args = parser.parse_known_args()[0]
+    config['options']['create_new_gasf'] = args.newgasf
+    config['options']['train_model'] = args.train
+
+
+    parser.add_argument('--nbbh', type=int, default = config['options']['num_bbh'])
+    parser.add_argument('--nbg', type=int, default = config['options']['num_bg'])
+    parser.add_argument('--nglitch', type=int, default = config['options']['num_glitch'])
+
+    parser.add_argument('--epoch', type=int, default = config['hyperparameters']['epochs'])
+    parser.add_argument('--batch', type=int, default = config['hyperparameters']['batch_size'])
+
+    args = parser.parse_args()
+    config['options']['num_bbh'] = args.nbbh
+    config['options']['num_bg'] = args.nbg
+    config['options']['num_glitch'] = args.nglitch
+
+    config['options']['epochs'] = args.epoch
+    config['options']['batch_size'] = args.batch
+
+    main(config)

@@ -1,19 +1,19 @@
 paths:
-  data_path: "s3://cchou/testing/"
-  data_path_gasf: "s3://cchou/gwgasf/gasf_dataset/"
-  models_path: "s3://cchou/gwgasf/models/"
-  results_path: "s3://cchou/gwgasf/results/"
+  data_path: "s3://dfredin/testing/"
+  data_path_gasf: "s3://dfredin/gasf_dataset/"
+  models_path: "s3://dfredin/models/"
+  results_path: "s3://dfredin/results/"
 
 options:
-  create_new_gasf: true
+  create_new_gasf: false
   apply_snr_filter: false
   snr_threshold: 12
   shuffle_data: true
   select_samples: true
   train_model: false
-  num_bbh: 2000
-  num_bg: 2000
-  num_glitch: 2000
+  num_bbh: 10
+  num_bg: 10
+  num_glitch: 10
 
 hyperparameters:
   learning_rate: 0.0005
@@ -28,6 +28,6 @@ ratios:
   validation: 0.10
 
 s3_credentials:
-  access_key: "XRIYL1052YCQ125N75UM"
-  secret_key: "XES9mLNbxAWKZC1AUcYFlGd7ByyXXSYw5yB3UrwM"
+  access_key: "7K8NP1SDRMTT7UJM0OS1"
+  secret_key: "k88AFw9F3AU893oTAfvuwURFz93oqxYIEKiLm87U"
   host_base: "https://s3-west.nrp-nautilus.io"
