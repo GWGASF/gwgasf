@@ -56,11 +56,6 @@ if __name__ == "__main__":
     parser.add_argument('--newgasf', action='store_true', default = config['options']['create_new_gasf'])
     parser.add_argument('--train', action='store_true', default = config['options']['train_model'])
 
-    args = parser.parse_known_args()[0]
-    config['options']['create_new_gasf'] = args.newgasf
-    config['options']['train_model'] = args.train
-
-
     parser.add_argument('--nbbh', type=int, default = config['options']['num_bbh'])
     parser.add_argument('--nbg', type=int, default = config['options']['num_bg'])
     parser.add_argument('--nglitch', type=int, default = config['options']['num_glitch'])
@@ -69,11 +64,14 @@ if __name__ == "__main__":
     parser.add_argument('--batch', type=int, default = config['hyperparameters']['batch_size'])
 
     args = parser.parse_args()
+    config['options']['create_new_gasf'] = args.newgasf
+    config['options']['train_model'] = args.train
+
     config['options']['num_bbh'] = args.nbbh
     config['options']['num_bg'] = args.nbg
     config['options']['num_glitch'] = args.nglitch
 
-    config['options']['epochs'] = args.epoch
-    config['options']['batch_size'] = args.batch
+    config['hyperparameters']['epochs'] = args.epoch
+    config['hyperparameters']['batch_size'] = args.batch    
 
     main(config)
