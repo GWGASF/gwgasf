@@ -8,9 +8,11 @@ import logging
 import tempfile
 from libs.utils.s3_helper import create_s3_filesystem
 
-def plot_training_validation_loss(training_loss, validation_loss, epochs, path):
+def plot_training_validation_loss(training_loss, validation_loss, config):
     """Plot training and validation loss vs epochs and save the plot to S3."""
-    fs = create_s3_filesystem()  # Create the S3 filesystem
+    fs = create_s3_filesystem(config)  # Create the S3 filesystem
+    epochs = config['hyperparameters']['epochs']
+    path = config['paths']['results_path']
     save_path_s3 = os.path.join(path, "train_val_Loss.png")
 
     # Plot the training and validation loss
@@ -46,7 +48,7 @@ def plot_training_validation_loss(training_loss, validation_loss, epochs, path):
 
 def plot_confusion_matrix(conf_matrix, title, config):
     """Plot confusion matrix using sklearn's ConfusionMatrixDisplay and save the plot to S3."""
-    fs = create_s3_filesystem()  # Create the S3 filesystem
+    fs = create_s3_filesystem(config)  # Create the S3 filesystem
     save_path_s3 = config['paths']['results_path'] + f'{title}_confusion_matrix.png'
 
     # Plot the confusion matrix

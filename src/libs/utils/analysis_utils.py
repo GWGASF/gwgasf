@@ -11,7 +11,7 @@ import tempfile
 
 def save_metrics(metrics, config, dataset_name):
     """Save precision, recall, F1 score, and support to a CSV file on S3."""
-    fs = create_s3_filesystem()  # Create the S3 filesystem
+    fs = create_s3_filesystem(config)  # Create the S3 filesystem
     save_path_s3 = os.path.join(config['paths']['results_path'], f'{dataset_name}_confusion_matrix_metrics.csv')
 
     # Prepare the header and data

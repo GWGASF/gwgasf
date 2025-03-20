@@ -4,7 +4,6 @@
 *.lnk
 *.exe
 *.yml
-*.txt
 *.csv
 *.json
 *.pyc
