@@ -50,7 +50,7 @@ def main(config):
 
 if __name__ == "__main__":
     # Load arguments from the TOML file
-    config = parse_arguments('gasf/src/arguments.yaml')
+    config = parse_arguments('gw_anomaly_detection/gasf/src/arguments.yaml')
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--newgasf', action='store_true', default = config['options']['create_new_gasf'])
