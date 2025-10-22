@@ -13,6 +13,9 @@ import tempfile
 import logging
 import re
 
+from libs.data.s3_utils import S3_session
+
+
 class ts_data:
     def __init__(self, file_name):
         self.file_name = file_name
@@ -167,23 +170,31 @@ def convert_and_label_data(data):
 
 def save_gasf_to_hdf5(data, labels, config):
     """Save GASF data and labels to HDF5 file in S3."""
-    fs = create_s3_filesystem(config)
+    # fs = create_s3_filesystem(config)
     file_path_s3 = config['paths']['data_path_gasf'] + 'gasf_data.hdf5'
 
     # Write to a temporary file locally
     with tempfile.NamedTemporaryFile(delete=False, suffix=".hdf5") as tmp_file:
+        tmp_file.name = 'gasf_data.hdf5'  # Rename for clarity
         temp_file_path = tmp_file.name
         logging.info(f"Created temporary file for GASF data: {temp_file_path}")
         with h5py.File(temp_file_path, 'w') as hf:
             for key in data:
                 hf.create_dataset(key, data=data[key])
                 hf.create_dataset(f'{key}_label', data=labels[key])
-
+    
     # Attempt to upload the temporary file to S3 using fs.put
     try:
-        logging.info(f"Uploading GASF data to S3 at {file_path_s3}")
-        fs.put_file(temp_file_path, file_path_s3)  # Use fs.put for direct file copy to S3
-        logging.info(f"Successfully uploaded GASF data to {file_path_s3}")
+        # logging.info(f"Uploading GASF data to S3 at {file_path_s3}")
+        s3 = S3_session(config['s3'])
+        s3.upload(
+            file_name=temp_file_path,
+            upload_dir = config['paths']['data_path_gasf'].replace(f"s3://{s3.bucket}/", "").rstrip("/")
+        )
+        # logging.info(f"GASF data saved to {config['paths']['data_path_gasf']}")
+
+        # fs.put(temp_file_path, file_path_s3)  # Use fs.put for direct file copy to S3
+        # logging.info(f"Successfully uploaded GASF data to {file_path_s3}")
     except Exception as e:
         logging.error(f"Failed to upload GASF data to S3: {e}")
 

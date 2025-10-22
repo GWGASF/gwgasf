@@ -7,6 +7,8 @@ import logging
 from libs.utils.s3_helper import create_s3_filesystem
 from libs.architecture.cnn_model import CNNModel
 from libs.data.data_utils import set_seed
+from libs.data.s3_utils import S3_session
+
 
 def save_checkpoint(path, model, optimizer, epoch, loss, config):
     """Save model checkpoint."""
@@ -46,6 +48,7 @@ def save_best_model(model, config):
 
     # Create a temporary file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pth") as tmp_file:
+        tmp_file.name = 'best_model.pth'  # Rename for clarity
         temp_model_path = tmp_file.name
 
     try:
@@ -56,12 +59,19 @@ def save_best_model(model, config):
         # Get the file size explicitly
         file_size = os.path.getsize(temp_model_path)
         logging.info(f"File size: {file_size} bytes")
+#TODO:
+        s3 = S3_session(config['s3'])
+        s3.upload(
+            file_name=temp_model_path,
+            upload_dir = config['paths']['models_path'].replace(f"s3://{s3.bucket}/", "").rstrip("/")
+        )
+        # logging.info(f"GASF data saved to {config['paths']['data_path_gasf']}")
 
-        # Open the file in binary mode and upload using fs.put
-        with open(temp_model_path, "rb") as f:
-            fs.put(temp_model_path, s3_model_path)
+        # # Open the file in binary mode and upload using fs.put
+        # with open(temp_model_path, "rb") as f:
+        #     fs.put(temp_model_path, s3_model_path)
 
-        logging.info(f"Successfully uploaded model to S3 at {s3_model_path}")
+        # logging.info(f"Successfully uploaded model to S3 at {s3_model_path}")
     
     except Exception as e:
         logging.error(f"Failed to upload model to S3: {e}")

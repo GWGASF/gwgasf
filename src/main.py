@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.INFO)
 def main(config):
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Using device: {device}")
 
     # Data Preparation
     if config['options']['create_new_gasf']:
@@ -32,36 +33,27 @@ def main(config):
             # Model Training
             logging.info("Training model...")
             train_model(config, device, training_data, validation_data)
-
         else:
             logging.info("Training skipped. Loading the best model for evaluation...")
             # Evaluation and Analysis
-            # Plot confusion matrices for training, validation, and testing datasets
             for dataset, name in zip([training_data, validation_data, testing_data], ['Training', 'Validation', 'Test']):
                 conf_matrix = calculate_confusion_matrix(load_best_model(config, device), dataset, config, name)
                 plot_confusion_matrix(conf_matrix, name, config)
 
-            # Visualization
-            # fig = plot_gasf(gasf_data['bbh'], "GASF Data")  # Example for bbh
-            # save_plot(fig, config['paths']['results_path'] + 'gasf_plot.png')
-            
-            # fig = plot_time_series(data['bbh'], "Time Series Data")  # Example for bbh
-            # save_plot(fig, config['paths']['results_path'] + 'time_series_plot.png')
-
 if __name__ == "__main__":
-    # Load arguments from the TOML file
+    # Load arguments from the YAML file
     config = parse_arguments('gw_anomaly_detection/gasf/src/arguments.yaml')
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--newgasf', action='store_true', default = config['options']['create_new_gasf'])
-    parser.add_argument('--train', action='store_true', default = config['options']['train_model'])
+    parser.add_argument('--newgasf', action='store_true', default=config['options']['create_new_gasf'])
+    parser.add_argument('--train', action='store_true', default=config['options']['train_model'])
 
-    parser.add_argument('--nbbh', type=int, default = config['options']['num_bbh'])
-    parser.add_argument('--nbg', type=int, default = config['options']['num_bg'])
-    parser.add_argument('--nglitch', type=int, default = config['options']['num_glitch'])
+    parser.add_argument('--nbbh', type=int, default=config['options']['num_bbh'])
+    parser.add_argument('--nbg', type=int, default=config['options']['num_bg'])
+    parser.add_argument('--nglitch', type=int, default=config['options']['num_glitch'])
 
-    parser.add_argument('--epoch', type=int, default = config['hyperparameters']['epochs'])
-    parser.add_argument('--batch', type=int, default = config['hyperparameters']['batch_size'])
+    parser.add_argument('--epoch', type=int, default=config['hyperparameters']['epochs'])
+    parser.add_argument('--batch', type=int, default=config['hyperparameters']['batch_size'])
 
     args = parser.parse_args()
     config['options']['create_new_gasf'] = args.newgasf

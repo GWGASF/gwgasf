@@ -1,8 +1,13 @@
 paths:
-  data_path: "s3://dfredin/testing/"
-  data_path_gasf: "s3://dfredin/gasf_dataset/"
-  models_path: "s3://dfredin/models/"
-  results_path: "s3://dfredin/results/"
+  # data_path: "s3://dfredin/testing/" # dfredin
+  # data_path_gasf: "s3://dfredin/dataset_gasf/" # dfredin
+  data_path: "s3://cchou/testing/data_training_cache/" # cchou
+  data_path_gasf: "s3://cchou/testing/gasf_data/" #cchou
+
+  # models_path: "s3://dfredin/models/"
+  # results_path: "s3://dfredin/results/"
+  models_path: "s3://cchou/testing/models/"
+  results_path: "s3://cchou/testing/results/"
 
 options:
   create_new_gasf: false
@@ -27,7 +32,26 @@ ratios:
   test: 0.10
   validation: 0.10
 
-s3_credentials:
-  access_key: "7K8NP1SDRMTT7UJM0OS1"
-  secret_key: "k88AFw9F3AU893oTAfvuwURFz93oqxYIEKiLm87U"
-  host_base: "https://s3-west.nrp-nautilus.io"
+# s3_credentials:
+#   access_key: "7K8NP1SDRMTT7UJM0OS1" # dfredin
+#   secret_key: "k88AFw9F3AU893oTAfvuwURFz93oqxYIEKiLm87U"  # dfredin
+#   # access_key: "XRIYL1052YCQ125N75UM" # cchou
+#   # secret_key: "XES9mLNbxAWKZC1AUcYFlGd7ByyXXSYw5yB3UrwM"  # cchou
+#   host_base: "https://s3-west.nrp-nautilus.io"
+
+s3: #cchou
+  access_key: XRIYL1052YCQ125N75UM
+  secret_key: XES9mLNbxAWKZC1AUcYFlGd7ByyXXSYw5yB3UrwM
+  host_base: https://s3-west.nrp-nautilus.io
+  bucket: cchou
+  # common_prefix: O3_data/
+  # upload_dir: 'testing/data_training_cache'
+
+  
+# s3: #dfredin
+#   access_key: 7K8NP1SDRMTT7UJM0OS1
+#   secret_key: k88AFw9F3AU893oTAfvuwURFz93oqxYIEKiLm87U
+#   host_base: https://s3-west.nrp-nautilus.io
+#   bucket: dfredin
+#   # common_prefix: O3_data/
+#   # upload_dir: 'testing/data_training_cache'

@@ -7,13 +7,15 @@ import numpy as np
 import logging
 import tempfile
 from libs.utils.s3_helper import create_s3_filesystem
+from libs.data.s3_utils import S3_session
 
 def plot_training_validation_loss(training_loss, validation_loss, config):
     """Plot training and validation loss vs epochs and save the plot to S3."""
     fs = create_s3_filesystem(config)  # Create the S3 filesystem
     epochs = config['hyperparameters']['epochs']
     path = config['paths']['results_path']
-    save_path_s3 = os.path.join(path, "train_val_Loss.png")
+    file_name = "train_val_Loss.png"
+    save_path_s3 = os.path.join(path, file_name)
 
     # Plot the training and validation loss
     total_epoch = np.linspace(1, epochs, epochs)
@@ -26,6 +28,7 @@ def plot_training_validation_loss(training_loss, validation_loss, config):
 
     # Save the plot to a temporary local file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+        tmp_file.name = file_name
         temp_file_path = tmp_file.name
         logging.info(f"Created temporary file for loss plot: {temp_file_path}")
         plt.savefig(temp_file_path, bbox_inches='tight')
@@ -33,9 +36,14 @@ def plot_training_validation_loss(training_loss, validation_loss, config):
 
     # Upload the plot to S3
     try:
-        logging.info(f"Uploading loss plot to S3 at {save_path_s3}")
-        fs.put(temp_file_path, save_path_s3)  # Upload to S3
-        logging.info(f"Successfully uploaded loss plot to {save_path_s3}")
+        s3 = S3_session(config['s3'])
+        s3.upload(
+            file_name=temp_file_path,
+            upload_dir = config['paths']['results_path'].replace(f"s3://{s3.bucket}/", "").rstrip("/")
+        )
+        # logging.info(f"Uploading loss plot to S3 at {save_path_s3}")
+        # fs.put(temp_file_path, save_path_s3)  # Upload to S3
+        # logging.info(f"Successfully uploaded loss plot to {save_path_s3}")
     except Exception as e:
         logging.error(f"Failed to upload loss plot to S3: {e}")
 
@@ -49,7 +57,8 @@ def plot_training_validation_loss(training_loss, validation_loss, config):
 def plot_confusion_matrix(conf_matrix, title, config):
     """Plot confusion matrix using sklearn's ConfusionMatrixDisplay and save the plot to S3."""
     fs = create_s3_filesystem(config)  # Create the S3 filesystem
-    save_path_s3 = config['paths']['results_path'] + f'{title}_confusion_matrix.png'
+    file_name = f"{title}_confusion_matrix.png"
+    save_path_s3 = config['paths']['results_path'] + file_name
 
     # Plot the confusion matrix
     disp = ConfusionMatrixDisplay(confusion_matrix=conf_matrix, display_labels=['Glitch', 'Signal', 'Background'])
@@ -74,6 +83,7 @@ def plot_confusion_matrix(conf_matrix, title, config):
 
     # Save the plot to a temporary local file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_file:
+        tmp_file.name = file_name
         temp_file_path = tmp_file.name
         logging.info(f"Created temporary file for plot: {temp_file_path}")
         plt.savefig(temp_file_path, bbox_inches='tight')
@@ -81,9 +91,14 @@ def plot_confusion_matrix(conf_matrix, title, config):
 
     # Upload the plot to S3
     try:
-        logging.info(f"Uploading plot to S3 at {save_path_s3}")
-        fs.put(temp_file_path, save_path_s3)  # Upload to S3
-        logging.info(f"Successfully uploaded plot to {save_path_s3}")
+        s3 = S3_session(config['s3'])
+        s3.upload(
+            file_name=temp_file_path,
+            upload_dir = config['paths']['results_path'].replace(f"s3://{s3.bucket}/", "").rstrip("/")
+        )
+        # logging.info(f"Uploading plot to S3 at {save_path_s3}")
+        # fs.put(temp_file_path, save_path_s3)  # Upload to S3
+        # logging.info(f"Successfully uploaded plot to {save_path_s3}")
     except Exception as e:
         logging.error(f"Failed to upload plot to S3: {e}")
 

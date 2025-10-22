@@ -8,11 +8,14 @@ import csv
 import os
 import logging
 import tempfile
+from libs.data.s3_utils import S3_session
+
 
 def save_metrics(metrics, config, dataset_name):
     """Save precision, recall, F1 score, and support to a CSV file on S3."""
     fs = create_s3_filesystem(config)  # Create the S3 filesystem
-    save_path_s3 = os.path.join(config['paths']['results_path'], f'{dataset_name}_confusion_matrix_metrics.csv')
+    file_name = f"{dataset_name}_confusion_matrix_metrics.csv"
+    save_path_s3 = os.path.join(config['paths']['results_path'], file_name)
 
     # Prepare the header and data
     header = ['Class', 'Precision', 'Recall', 'F1 Score', 'Support']
@@ -24,6 +27,7 @@ def save_metrics(metrics, config, dataset_name):
 
     # Save the metrics to a temporary CSV file locally
     with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp_file:
+        tmp_file.name = file_name
         temp_file_path = tmp_file.name
         logging.info(f"Created temporary file for metrics: {temp_file_path}")
         with open(temp_file_path, 'w', newline='') as f:
@@ -33,9 +37,14 @@ def save_metrics(metrics, config, dataset_name):
 
     # Upload the CSV file to S3
     try:
-        logging.info(f"Uploading metrics to S3 at {save_path_s3}")
-        fs.put(temp_file_path, save_path_s3)  # Upload to S3
-        logging.info(f"Successfully uploaded metrics to {save_path_s3}")
+        s3 = S3_session(config['s3'])
+        s3.upload(
+            file_name=temp_file_path,
+            upload_dir = config['paths']['results_path'].replace(f"s3://{s3.bucket}/", "").rstrip("/")
+        )
+        # logging.info(f"Uploading metrics to S3 at {save_path_s3}")
+        # fs.put(temp_file_path, save_path_s3)  # Upload to S3
+        # logging.info(f"Successfully uploaded metrics to {save_path_s3}")
     except Exception as e:
         logging.error(f"Failed to upload metrics to S3: {e}")
 
